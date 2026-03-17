@@ -1,4 +1,21 @@
-# AI PR Reviewer
+<p align="center">
+  <img src="assets/logo.jpg" alt="Nitpick Senior" width="150" />
+</p>
+
+<h1 align="center">Nitpick Senior</h1>
+
+<p align="center">
+  <em>Um, actually... AI-powered code review that catches what you missed</em>
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#quick-start">Quick Start</a> •
+  <a href="#supported-providers">Providers</a> •
+  <a href="#configuration">Configuration</a>
+</p>
+
+---
 
 A GitHub Action that automatically reviews pull requests using AI. It analyzes code changes and posts inline comments on issues, bugs, and best practice violations.
 
@@ -8,13 +25,15 @@ A GitHub Action that automatically reviews pull requests using AI. It analyzes c
 - **Language agnostic**: Review behavior is defined by an agent spec file in your repo
 - **Inline comments**: Posts comments directly on problematic lines with fix suggestions
 - **PR summaries**: Generates a brief summary of the changes
+- **Cost tracking**: Logs token usage and estimated costs
+- **Smart filtering**: Filter comments by severity, auto-resolve outdated comments
 
 ## Quick Start
 
-1. Create `.github/workflows/ai-review.yml`:
+1. Create `.github/workflows/nitpick-senior.yml`:
 
 ```yaml
-name: AI Code Review
+name: Nitpick Senior Review
 
 on:
   pull_request:
@@ -30,7 +49,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: your-username/ai-pr-reviewer@v1
+      - uses: datarootsio/github-reviewer@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           model: gpt-4o
@@ -41,14 +60,15 @@ jobs:
 2. (Optional) Create `.github/ai-reviewer.md` to customize review behavior:
 
 ```markdown
-# AI Code Reviewer
+# Nitpick Senior Configuration
 
-You are a code reviewer for this project.
+You are a senior code reviewer for this project.
 
 ## What to Review
 - Security vulnerabilities
 - Performance issues
 - Logic errors
+- Best practice violations
 
 ## Project Context
 - This is a Python FastAPI backend
@@ -56,6 +76,7 @@ You are a code reviewer for this project.
 
 ## Do NOT Comment On
 - Formatting (handled by Black)
+- Import ordering (handled by isort)
 ```
 
 ## Inputs
@@ -67,7 +88,9 @@ You are a code reviewer for this project.
 | `agent_spec_path` | No | `.github/ai-reviewer.md` | Path to agent spec file |
 | `post_summary` | No | `true` | Post PR summary comment |
 | `post_inline_comments` | No | `true` | Post inline review comments |
-| `max_comments` | No | `20` | Maximum inline comments to post |
+| `max_comments` | No | `10` | Maximum inline comments to post |
+| `min_severity` | No | `warning` | Minimum severity to post (error, warning, info) |
+| `resolve_outdated` | No | `true` | Resolve outdated comments from previous runs |
 
 ## Supported Providers
 
@@ -85,7 +108,7 @@ You are a code reviewer for this project.
 ### OpenAI
 
 ```yaml
-- uses: your-username/ai-pr-reviewer@v1
+- uses: datarootsio/github-reviewer@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: gpt-4o
@@ -96,7 +119,7 @@ You are a code reviewer for this project.
 ### Anthropic
 
 ```yaml
-- uses: your-username/ai-pr-reviewer@v1
+- uses: datarootsio/github-reviewer@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: anthropic/claude-sonnet-4-5-20250929
@@ -107,7 +130,7 @@ You are a code reviewer for this project.
 ### Azure OpenAI
 
 ```yaml
-- uses: your-username/ai-pr-reviewer@v1
+- uses: datarootsio/github-reviewer@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: azure/gpt-4o
@@ -119,7 +142,7 @@ You are a code reviewer for this project.
 ### AWS Bedrock
 
 ```yaml
-- uses: your-username/ai-pr-reviewer@v1
+- uses: datarootsio/github-reviewer@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0

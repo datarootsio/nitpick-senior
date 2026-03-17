@@ -1,6 +1,6 @@
-name: 'AI PR Reviewer'
-description: 'AI-powered code review for pull requests using LLMs'
-author: 'ramirobarraco'
+name: 'Nitpick Senior'
+description: 'Um, actually... AI-powered code review that catches what you missed'
+author: 'datarootsio'
 
 inputs:
   github_token:
@@ -55,5 +55,5 @@ runs:
     INPUT_RESOLVE_OUTDATED: ${{ inputs.resolve_outdated }}
 
 branding:
-  icon: 'code'
-  color: 'purple'
+  icon: 'eye'
+  color: 'orange'
