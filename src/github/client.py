@@ -126,12 +126,16 @@ class GitHubClient:
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json",
         }
-        response = requests.post(
-            GRAPHQL_URL,
-            json={"query": query, "variables": {"id": node_id}},
-            headers=headers,
-            timeout=30,
-        )
+        try:
+            response = requests.post(
+                GRAPHQL_URL,
+                json={"query": query, "variables": {"id": node_id}},
+                headers=headers,
+                timeout=30,
+            )
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"GraphQL request failed: {e}")
+            return False
 
         if response.status_code != 200:
             logger.warning(f"GraphQL request failed: {response.status_code}")
