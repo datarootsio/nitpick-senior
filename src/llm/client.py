@@ -114,19 +114,18 @@ Respond with a JSON object in this exact format:
 }}
 
 Guidelines for comments:
-- Only comment on actual issues (bugs, security, performance, bad practices)
-- Use "error" severity for critical issues (security vulnerabilities, bugs that will cause failures)
-- Use "warning" for code quality issues and best practice violations
-- Do NOT use "info" severity - only comment if it's at least a warning
+- MAXIMUM 5 comments total - be extremely selective
+- Only comment on bugs, security issues, or serious problems
+- Use "error" for critical issues, "warning" for significant problems
+- NEVER comment on the same issue twice, even on different lines
+- If an issue appears multiple times, mention it ONCE with "appears in multiple places"
 - The "line" must be a line number from the NEW version of the file (lines with + prefix)
 - Include a "suggestion" when you have a concrete code fix
-- Be concise but specific in your explanations
 - Do NOT comment on:
-  - Stylistic preferences or formatting (assume linters/formatters handle this)
-  - Missing features that weren't part of the change
-  - Theoretical issues that are unlikely in practice
-  - The same issue multiple times - consolidate into one comment
-- Aim for 5-10 high-quality comments maximum, not comprehensive coverage
+  - Style, formatting, naming preferences
+  - Theoretical/unlikely edge cases
+  - Missing features or enhancements
+  - Anything a linter would catch
 
 If there are no significant issues to report, return an empty comments array."""
 

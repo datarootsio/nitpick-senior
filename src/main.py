@@ -7,6 +7,7 @@ import sys
 from src.config import Config
 from src.github.client import GitHubClient
 from src.github.comments import (
+    deduplicate_comments,
     filter_by_severity,
     post_review_with_comments,
     post_summary_comment,
@@ -59,11 +60,18 @@ def main() -> int:
             system_prompt=system_prompt,
         )
 
-        # Filter comments by severity
-        filtered_comments = filter_by_severity(response.comments, config.min_severity)
-        if len(filtered_comments) < len(response.comments):
+        # Deduplicate comments first
+        deduped_comments = deduplicate_comments(response.comments)
+        if len(deduped_comments) < len(response.comments):
             logger.info(
-                f"Filtered {len(response.comments) - len(filtered_comments)} "
+                f"Removed {len(response.comments) - len(deduped_comments)} duplicate comments"
+            )
+
+        # Filter comments by severity
+        filtered_comments = filter_by_severity(deduped_comments, config.min_severity)
+        if len(filtered_comments) < len(deduped_comments):
+            logger.info(
+                f"Filtered {len(deduped_comments) - len(filtered_comments)} "
                 f"comments below {config.min_severity} severity"
             )
 
