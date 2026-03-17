@@ -29,7 +29,17 @@ inputs:
   max_comments:
     description: 'Maximum inline comments to post'
     required: false
-    default: '20'
+    default: '10'
+
+  min_severity:
+    description: 'Minimum severity to post (error, warning, info)'
+    required: false
+    default: 'warning'
+
+  resolve_outdated:
+    description: 'Resolve outdated review comments from previous runs'
+    required: false
+    default: 'true'
 
 runs:
   using: 'docker'
@@ -41,6 +51,8 @@ runs:
     INPUT_POST_SUMMARY: ${{ inputs.post_summary }}
     INPUT_POST_INLINE_COMMENTS: ${{ inputs.post_inline_comments }}
     INPUT_MAX_COMMENTS: ${{ inputs.max_comments }}
+    INPUT_MIN_SEVERITY: ${{ inputs.min_severity }}
+    INPUT_RESOLVE_OUTDATED: ${{ inputs.resolve_outdated }}
 
 branding:
   icon: 'code'

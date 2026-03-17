@@ -3,6 +3,7 @@
 import json
 import logging
 import re
+from dataclasses import dataclass
 
 import litellm
 from pydantic import ValidationError
@@ -15,6 +16,17 @@ logger = logging.getLogger(__name__)
 litellm.suppress_debug_info = True
 
 
+@dataclass
+class UsageStats:
+    """Token usage and cost statistics."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cost_usd: float = 0.0
+    model: str = ""
+
+
 class LLMClient:
     """Client for interacting with LLMs via LiteLLM."""
 
@@ -25,6 +37,7 @@ class LLMClient:
             model: LiteLLM model string (e.g., "gpt-4o", "anthropic/claude-sonnet-4-5-20250929")
         """
         self.model = model
+        self.usage = UsageStats(model=model)
 
     def review(self, system_prompt: str, diff_content: str) -> ReviewResponse:
         """Generate a code review for the given diff.
@@ -48,7 +61,26 @@ class LLMClient:
                 temperature=0.3,
             )
 
+            if not response.choices:
+                raise ValueError("LLM returned empty response")
+
             content = response.choices[0].message.content
+            if not content:
+                raise ValueError("LLM returned empty message content")
+
+            # Track usage statistics
+            if hasattr(response, "usage") and response.usage:
+                self.usage.prompt_tokens += response.usage.prompt_tokens or 0
+                self.usage.completion_tokens += response.usage.completion_tokens or 0
+                self.usage.total_tokens += response.usage.total_tokens or 0
+
+            # Calculate cost using LiteLLM
+            try:
+                cost = litellm.completion_cost(completion_response=response)
+                self.usage.cost_usd += cost
+            except Exception:
+                pass  # Cost calculation not available for all models
+
             return self._parse_response(content)
 
         except Exception as e:
@@ -83,14 +115,20 @@ Respond with a JSON object in this exact format:
 
 Guidelines for comments:
 - Only comment on actual issues (bugs, security, performance, bad practices)
-- Use "error" severity for critical issues (security vulnerabilities, bugs)
+- Use "error" severity for critical issues (security vulnerabilities, bugs that will cause failures)
 - Use "warning" for code quality issues and best practice violations
-- Use "info" for suggestions and improvements
+- Do NOT use "info" severity - only comment if it's at least a warning
 - The "line" must be a line number from the NEW version of the file (lines with + prefix)
 - Include a "suggestion" when you have a concrete code fix
 - Be concise but specific in your explanations
+- Do NOT comment on:
+  - Stylistic preferences or formatting (assume linters/formatters handle this)
+  - Missing features that weren't part of the change
+  - Theoretical issues that are unlikely in practice
+  - The same issue multiple times - consolidate into one comment
+- Aim for 5-10 high-quality comments maximum, not comprehensive coverage
 
-If there are no issues to report, return an empty comments array."""
+If there are no significant issues to report, return an empty comments array."""
 
     def _extract_json(self, content: str) -> str:
         """Extract JSON from response that may contain markdown or other text."""
