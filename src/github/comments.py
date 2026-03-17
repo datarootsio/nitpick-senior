@@ -7,7 +7,7 @@ from src.llm.response import ReviewComment
 
 logger = logging.getLogger(__name__)
 
-LOGO_URL = "https://raw.githubusercontent.com/datarootsio/github-reviewer/main/assets/logo.jpg"
+LOGO_URL = "https://raw.githubusercontent.com/datarootsio/github-reviewer/main/assets/logo.png"
 BOT_NAME = "Nitpick Senior"
 BOT_REPO = "https://github.com/datarootsio/github-reviewer"
 BOT_SIGNATURE = (

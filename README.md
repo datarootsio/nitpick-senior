@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.jpg" alt="Nitpick Senior" width="150" />
+  <img src="assets/logo.png" alt="Nitpick Senior" width="150" />
 </p>
 
 <h1 align="center">Nitpick Senior</h1>
