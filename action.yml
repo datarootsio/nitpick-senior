@@ -1,0 +1,47 @@
+name: 'AI PR Reviewer'
+description: 'AI-powered code review for pull requests using LLMs'
+author: 'ramirobarraco'
+
+inputs:
+  github_token:
+    description: 'GitHub token for PR access'
+    required: true
+
+  model:
+    description: 'LiteLLM model string (e.g., gpt-4o, anthropic/claude-sonnet-4-5-20250929, azure/gpt-4o, bedrock/anthropic.claude-3-5-sonnet)'
+    required: true
+
+  agent_spec_path:
+    description: 'Path to agent spec file defining review behavior'
+    required: false
+    default: '.github/ai-reviewer.md'
+
+  post_summary:
+    description: 'Post PR summary comment'
+    required: false
+    default: 'true'
+
+  post_inline_comments:
+    description: 'Post inline code review comments'
+    required: false
+    default: 'true'
+
+  max_comments:
+    description: 'Maximum inline comments to post'
+    required: false
+    default: '20'
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+    INPUT_MODEL: ${{ inputs.model }}
+    INPUT_AGENT_SPEC_PATH: ${{ inputs.agent_spec_path }}
+    INPUT_POST_SUMMARY: ${{ inputs.post_summary }}
+    INPUT_POST_INLINE_COMMENTS: ${{ inputs.post_inline_comments }}
+    INPUT_MAX_COMMENTS: ${{ inputs.max_comments }}
+
+branding:
+  icon: 'code'
+  color: 'purple'
