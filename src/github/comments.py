@@ -7,38 +7,22 @@ from src.llm.response import ReviewComment
 
 logger = logging.getLogger(__name__)
 
-LOGO_URL = "https://raw.githubusercontent.com/datarootsio/github-reviewer/main/assets/logo.png"
 BOT_NAME = "Nitpick Senior"
 BOT_REPO = "https://github.com/datarootsio/github-reviewer"
-BOT_SIGNATURE = (
-    f"\n\n---\n"
-    f'<img src="{LOGO_URL}" width="20" height="20" /> '
-    f"*Um, actually... reviewed by [{BOT_NAME}]({BOT_REPO})*"
-)
+BOT_SIGNATURE = f"\n\n---\n:nerd_face: *Um, actually... reviewed by [{BOT_NAME}]({BOT_REPO})*"
 
 SEVERITY_LEVELS = {"error": 3, "warning": 2, "info": 1}
 
 
 def deduplicate_comments(comments: list[ReviewComment]) -> list[ReviewComment]:
-    """Remove duplicate comments (same file+line or very similar body)."""
-    seen_locations: set[tuple[str, int]] = set()
-    seen_issues: set[str] = set()
+    """Remove duplicate comments with identical content."""
+    seen_bodies: set[str] = set()
     unique = []
 
     for comment in comments:
-        # Skip if same file:line already commented
-        location = (comment.file, comment.line)
-        if location in seen_locations:
+        if comment.body in seen_bodies:
             continue
-        seen_locations.add(location)
-
-        # Skip if very similar issue already mentioned
-        # Use first 50 chars of body as fingerprint
-        fingerprint = comment.body[:50].lower()
-        if fingerprint in seen_issues:
-            continue
-        seen_issues.add(fingerprint)
-
+        seen_bodies.add(comment.body)
         unique.append(comment)
 
     return unique
@@ -88,7 +72,7 @@ def post_summary_comment(
         summary: Review summary text
         comment_count: Number of inline comments posted
     """
-    header = f'## <img src="{LOGO_URL}" width="24" height="24" /> {BOT_NAME} Review'
+    header = f"## :nerd_face: {BOT_NAME} Review"
     body = f"{header}\n\n{summary}\n\n"
 
     if comment_count > 0:
@@ -164,7 +148,7 @@ def post_review_with_comments(
         })
 
     # Build review body
-    header = f'## <img src="{LOGO_URL}" width="24" height="24" /> {BOT_NAME} Review'
+    header = f"## :nerd_face: {BOT_NAME} Review"
     review_body = f"{header}\n\n{summary}"
     review_body += BOT_SIGNATURE
 
