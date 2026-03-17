@@ -19,6 +19,31 @@ BOT_SIGNATURE = (
 SEVERITY_LEVELS = {"error": 3, "warning": 2, "info": 1}
 
 
+def deduplicate_comments(comments: list[ReviewComment]) -> list[ReviewComment]:
+    """Remove duplicate comments (same file+line or very similar body)."""
+    seen_locations: set[tuple[str, int]] = set()
+    seen_issues: set[str] = set()
+    unique = []
+
+    for comment in comments:
+        # Skip if same file:line already commented
+        location = (comment.file, comment.line)
+        if location in seen_locations:
+            continue
+        seen_locations.add(location)
+
+        # Skip if very similar issue already mentioned
+        # Use first 50 chars of body as fingerprint
+        fingerprint = comment.body[:50].lower()
+        if fingerprint in seen_issues:
+            continue
+        seen_issues.add(fingerprint)
+
+        unique.append(comment)
+
+    return unique
+
+
 def filter_by_severity(
     comments: list[ReviewComment], min_severity: str
 ) -> list[ReviewComment]:

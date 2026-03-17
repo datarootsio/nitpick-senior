@@ -73,7 +73,7 @@ class Config:
             post_summary=os.environ.get("INPUT_POST_SUMMARY", "true").lower() == "true",
             post_inline_comments=os.environ.get("INPUT_POST_INLINE_COMMENTS", "true").lower()
             == "true",
-            max_comments=int(os.environ.get("INPUT_MAX_COMMENTS", "10")),
+            max_comments=int(os.environ.get("INPUT_MAX_COMMENTS", "5")),
             min_severity=min_severity,
             resolve_outdated=os.environ.get("INPUT_RESOLVE_OUTDATED", "true").lower() == "true",
             repo_owner=repo_owner,
