@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 
 import litellm
 from pydantic import ValidationError
@@ -45,7 +46,6 @@ class LLMClient:
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.3,
-                response_format={"type": "json_object"},
             )
 
             content = response.choices[0].message.content
@@ -92,23 +92,38 @@ Guidelines for comments:
 
 If there are no issues to report, return an empty comments array."""
 
+    def _extract_json(self, content: str) -> str:
+        """Extract JSON from response that may contain markdown or other text."""
+        # Try to find JSON in code blocks first
+        json_block = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
+        if json_block:
+            return json_block.group(1)
+
+        # Try to find raw JSON object
+        json_match = re.search(r"\{.*\}", content, re.DOTALL)
+        if json_match:
+            return json_match.group(0)
+
+        return content
+
     def _parse_response(self, content: str) -> ReviewResponse:
         """Parse the LLM response into a ReviewResponse."""
+        # Extract JSON from possibly markdown-wrapped response
+        json_str = self._extract_json(content)
+
         try:
-            data = json.loads(content)
+            data = json.loads(json_str)
             return ReviewResponse.model_validate(data)
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
-            logger.debug(f"Response content: {content}")
-            # Return empty response on parse failure
+            logger.debug(f"Response content: {content[:500]}")
             return ReviewResponse(
                 summary="Failed to parse review response", comments=[]
             )
         except ValidationError as e:
             logger.error(f"Response validation failed: {e}")
-            # Try to extract what we can
             try:
-                data = json.loads(content)
+                data = json.loads(json_str)
                 return ReviewResponse(
                     summary=data.get("summary", "Review completed"),
                     comments=[],

@@ -1,6 +1,7 @@
 """Main entry point for the AI PR Reviewer action."""
 
 import logging
+import os
 import sys
 
 from src.config import Config
@@ -71,10 +72,15 @@ def main() -> int:
             logger.info("Review complete (posting disabled)")
             comment_count = 0
 
-        # Output results
+        # Output results using GITHUB_OUTPUT file
         logger.info(f"Review complete: {comment_count} comments posted")
-        print(f"::set-output name=comment_count::{comment_count}")
-        print(f"::set-output name=summary::{response.summary[:200]}")
+        github_output = os.environ.get("GITHUB_OUTPUT")
+        if github_output:
+            with open(github_output, "a") as f:
+                f.write(f"comment_count={comment_count}\n")
+                # Escape newlines for multiline summary
+                safe_summary = response.summary[:200].replace("\n", " ")
+                f.write(f"summary={safe_summary}\n")
 
         return 0
 
