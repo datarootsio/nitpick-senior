@@ -12,8 +12,6 @@ logger = logging.getLogger(__name__)
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 
-BOT_SIGNATURE = "Nitpick Senior"
-
 
 class GitHubClient:
     """Wrapper around PyGithub for PR operations."""
@@ -160,10 +158,9 @@ class GitHubClient:
 
         for comment in pr.get_review_comments():
             # Check if this is our bot's comment and on outdated diff
-            # A comment is outdated when its line becomes None (code changed)
-            is_bot_comment = BOT_SIGNATURE in (comment.body or "")
+            # Comments are made by github-actions[bot], outdated when line is None
+            is_bot_comment = comment.user.login == "github-actions[bot]"
             is_outdated = comment.line is None
-            logger.debug(f"Comment on {comment.path}: line={comment.line}, bot={is_bot_comment}")
             if is_bot_comment and is_outdated and self._minimize_comment(comment.node_id):
                 resolved_count += 1
                 logger.info(f"Minimized outdated comment on {comment.path}")
