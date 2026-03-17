@@ -2,12 +2,15 @@
 
 import logging
 
+import requests
 from github.PullRequest import PullRequest
 from github.Repository import Repository
 
 from github import Github
 
 logger = logging.getLogger(__name__)
+
+GRAPHQL_URL = "https://api.github.com/graphql"
 
 BOT_SIGNATURE = "Nitpick Senior"
 
@@ -23,6 +26,7 @@ class GitHubClient:
             repo_owner: Repository owner (user or org)
             repo_name: Repository name
         """
+        self.token = token
         self.gh = Github(token)
         self.repo: Repository = self.gh.get_repo(f"{repo_owner}/{repo_name}")
 
@@ -100,24 +104,62 @@ class GitHubClient:
             comments=comments,
         )
 
+    def _minimize_comment(self, node_id: str) -> bool:
+        """Minimize a comment using GitHub's GraphQL API.
+
+        Args:
+            node_id: The GraphQL node ID of the comment
+
+        Returns:
+            True if successful, False otherwise
+        """
+        query = """
+        mutation MinimizeComment($id: ID!) {
+            minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) {
+                minimizedComment {
+                    isMinimized
+                }
+            }
+        }
+        """
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Content-Type": "application/json",
+        }
+        response = requests.post(
+            GRAPHQL_URL,
+            json={"query": query, "variables": {"id": node_id}},
+            headers=headers,
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            logger.warning(f"GraphQL request failed: {response.status_code}")
+            return False
+
+        data = response.json()
+        if "errors" in data:
+            logger.warning(f"GraphQL errors: {data['errors']}")
+            return False
+
+        return True
+
     def resolve_outdated_comments(self, pr_number: int) -> int:
-        """Resolve (minimize) outdated review comments from previous bot runs.
+        """Minimize outdated review comments from previous bot runs.
+
+        Uses GitHub's GraphQL API to collapse outdated comments.
 
         Returns the number of comments resolved.
         """
         pr = self.get_pull_request(pr_number)
         resolved_count = 0
 
-        # Get all review comments on the PR
         for comment in pr.get_review_comments():
             # Check if this is our bot's comment and on outdated diff
-            if BOT_SIGNATURE in (comment.body or "") and comment.position is None:
-                try:
-                    # Minimize the comment as outdated
-                    comment.edit(body=f"~~{comment.body}~~\n\n*Resolved: code has changed*")
-                    resolved_count += 1
-                    logger.info(f"Resolved outdated comment on {comment.path}")
-                except Exception as e:
-                    logger.warning(f"Failed to resolve comment: {e}")
+            is_bot_comment = BOT_SIGNATURE in (comment.body or "")
+            is_outdated = comment.position is None
+            if is_bot_comment and is_outdated and self._minimize_comment(comment.node_id):
+                resolved_count += 1
+                logger.info(f"Minimized outdated comment on {comment.path}")
 
         return resolved_count
