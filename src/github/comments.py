@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 BOT_NAME = "Nitpick Senior"
 BOT_REPO = "https://github.com/datarootsio/github-reviewer"
+BOT_USERNAME = "github-actions[bot]"
 BOT_SIGNATURE = f"\n\n---\n:nerd_face: *Um, actually... reviewed by [{BOT_NAME}]({BOT_REPO})*"
 
 SEVERITY_LEVELS = {"error": 3, "warning": 2, "info": 1}
