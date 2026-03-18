@@ -2,6 +2,8 @@
 
 import logging
 
+from github.PullRequestComment import PullRequestComment
+
 from src.github.client import GitHubClient
 from src.llm.response import ReviewComment
 
@@ -133,7 +135,7 @@ def sync_comments(
 
     existing = client.get_bot_comments(pr_number)
     # Index existing comments by (path, line), skip those with line=None (outdated)
-    existing_by_location: dict[tuple[str, int], object] = {
+    existing_by_location: dict[tuple[str, int], PullRequestComment] = {
         (c.path, c.line): c for c in existing if c.line is not None
     }
 
