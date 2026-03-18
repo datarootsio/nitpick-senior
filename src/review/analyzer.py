@@ -2,6 +2,7 @@
 
 import logging
 
+from src.constants import CHARS_PER_TOKEN
 from src.github.client import GitHubClient
 from src.github.diff import get_changed_line_numbers
 from src.llm.client import LLMClient
@@ -9,8 +10,6 @@ from src.llm.response import ReviewComment, ReviewResponse
 
 logger = logging.getLogger(__name__)
 
-# Token estimation: ~4 chars per token
-CHARS_PER_TOKEN = 4
 MAX_DIFF_TOKENS = 30000  # Leave room for response
 
 
@@ -50,8 +49,7 @@ def filter_valid_comments(
             valid_comments.append(comment)
         else:
             logger.warning(
-                f"Skipping comment on {comment.file}:{comment.line} - "
-                "line not in changed lines"
+                f"Skipping comment on {comment.file}:{comment.line} - line not in changed lines"
             )
 
     return valid_comments
@@ -106,8 +104,6 @@ def analyze_pr(
                 "targeting invalid lines"
             )
 
-    logger.info(
-        f"Review complete: {len(response.comments)} comments"
-    )
+    logger.info(f"Review complete: {len(response.comments)} comments")
 
     return response

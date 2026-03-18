@@ -2,9 +2,9 @@
 
 from dataclasses import dataclass
 
+from src.constants import CHARS_PER_TOKEN
 from src.github.diff import FileChange, parse_diff
 
-CHARS_PER_TOKEN = 4
 DEFAULT_CHUNK_SIZE = 20000  # tokens
 
 

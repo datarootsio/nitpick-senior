@@ -1,5 +1,5 @@
 from .client import GitHubClient
-from .comments import post_inline_comment, post_summary_comment
+from .comments import post_summary_comment, sync_comments
 from .diff import get_pr_diff, parse_diff
 
 __all__ = [
@@ -7,5 +7,5 @@ __all__ = [
     "get_pr_diff",
     "parse_diff",
     "post_summary_comment",
-    "post_inline_comment",
+    "sync_comments",
 ]

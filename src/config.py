@@ -16,7 +16,6 @@ class Config:
     post_inline_comments: bool
     max_comments: int
     min_severity: str
-    resolve_outdated: bool
 
     # GitHub context
     repo_owner: str
@@ -58,9 +57,7 @@ class Config:
         try:
             pr_number = int(pr_number_str)
         except ValueError as e:
-            raise ValueError(
-                f"Invalid PR number format: '{pr_number_str}' is not a number"
-            ) from e
+            raise ValueError(f"Invalid PR number format: '{pr_number_str}' is not a number") from e
 
         min_severity = os.environ.get("INPUT_MIN_SEVERITY", "warning").lower()
         if min_severity not in ("error", "warning", "info"):
@@ -75,7 +72,6 @@ class Config:
             == "true",
             max_comments=int(os.environ.get("INPUT_MAX_COMMENTS", "5")),
             min_severity=min_severity,
-            resolve_outdated=os.environ.get("INPUT_RESOLVE_OUTDATED", "true").lower() == "true",
             repo_owner=repo_owner,
             repo_name=repo_name,
             pr_number=pr_number,

@@ -3,6 +3,7 @@
 import logging
 
 import requests
+from github.IssueComment import IssueComment
 from github.PullRequest import PullRequest
 from github.PullRequestComment import PullRequestComment
 from github.Repository import Repository
@@ -57,7 +58,7 @@ class GitHubClient:
 
         return "\n".join(diff_parts)
 
-    def get_bot_issue_comments(self, pr_number: int) -> list:
+    def get_bot_issue_comments(self, pr_number: int) -> list[IssueComment]:
         """Fetch all issue comments made by the bot."""
         pr = self.get_pull_request(pr_number)
         return [c for c in pr.get_issue_comments() if c.user.login == BOT_USERNAME]
@@ -92,29 +93,7 @@ class GitHubClient:
             line=line,
         )
 
-    def create_review(
-        self,
-        pr_number: int,
-        body: str,
-        comments: list[dict],
-        event: str = "COMMENT",
-    ) -> None:
-        """Create a pull request review with multiple comments.
-
-        Args:
-            pr_number: Pull request number
-            body: Review summary body
-            comments: List of comment dicts with path, line, body
-            event: Review event type (COMMENT, APPROVE, REQUEST_CHANGES)
-        """
-        pr = self.get_pull_request(pr_number)
-        pr.create_review(
-            body=body,
-            event=event,
-            comments=comments,
-        )
-
-    def _minimize_comment(self, node_id: str) -> bool:
+    def minimize_comment(self, node_id: str) -> bool:
         """Minimize a comment using GitHub's GraphQL API.
 
         Args:
@@ -157,24 +136,3 @@ class GitHubClient:
             return False
 
         return True
-
-    def resolve_outdated_comments(self, pr_number: int) -> int:
-        """Minimize outdated review comments from previous bot runs.
-
-        Uses GitHub's GraphQL API to collapse outdated comments.
-
-        Returns the number of comments resolved.
-        """
-        pr = self.get_pull_request(pr_number)
-        resolved_count = 0
-
-        for comment in pr.get_review_comments():
-            # Check if this is our bot's comment and on outdated diff
-            # Comments are made by the bot, outdated when line is None
-            is_bot_comment = comment.user.login == BOT_USERNAME
-            is_outdated = comment.line is None
-            if is_bot_comment and is_outdated and self._minimize_comment(comment.node_id):
-                resolved_count += 1
-                logger.info(f"Minimized outdated comment on {comment.path}")
-
-        return resolved_count
