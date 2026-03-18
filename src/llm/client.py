@@ -154,9 +154,7 @@ If there are no significant issues to report, return an empty comments array."""
         except json.JSONDecodeError as e:
             logger.error(f"Failed to parse JSON response: {e}")
             logger.debug(f"Response content: {content[:500]}")
-            return ReviewResponse(
-                summary="Failed to parse review response", comments=[]
-            )
+            return ReviewResponse(summary="Failed to parse review response", comments=[])
         except ValidationError as e:
             logger.error(f"Response validation failed: {e}")
             try:
@@ -166,6 +164,4 @@ If there are no significant issues to report, return an empty comments array."""
                     comments=[],
                 )
             except Exception:
-                return ReviewResponse(
-                    summary="Failed to validate review response", comments=[]
-                )
+                return ReviewResponse(summary="Failed to validate review response", comments=[])
