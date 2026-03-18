@@ -9,8 +9,8 @@ from src.github.client import GitHubClient
 from src.github.comments import (
     deduplicate_comments,
     filter_by_severity,
-    post_review_with_comments,
     post_summary_comment,
+    sync_comments,
 )
 from src.llm.client import LLMClient
 from src.prompts.loader import load_agent_spec
@@ -45,12 +45,6 @@ def main() -> int:
         # Load agent specification
         system_prompt = load_agent_spec(config.agent_spec_path)
 
-        # Resolve outdated comments from previous runs
-        if config.resolve_outdated:
-            resolved = github_client.resolve_outdated_comments(config.pr_number)
-            if resolved > 0:
-                logger.info(f"Resolved {resolved} outdated comment(s)")
-
         # Analyze the PR
         logger.info(f"Analyzing PR #{config.pr_number}...")
         response = analyze_pr(
@@ -77,13 +71,17 @@ def main() -> int:
 
         # Post results
         if config.post_inline_comments and filtered_comments:
-            logger.info(f"Posting review with {len(filtered_comments)} comments...")
-            comment_count = post_review_with_comments(
+            logger.info(f"Syncing {len(filtered_comments)} comments...")
+            edited, created, minimized = sync_comments(
                 client=github_client,
                 pr_number=config.pr_number,
                 summary=response.summary,
-                comments=filtered_comments,
+                new_comments=filtered_comments,
                 max_comments=config.max_comments,
+            )
+            comment_count = edited + created
+            logger.info(
+                f"Synced comments: {edited} edited, {created} created, {minimized} minimized"
             )
         elif config.post_summary:
             logger.info("Posting summary comment...")

@@ -4,6 +4,7 @@ import logging
 
 import requests
 from github.PullRequest import PullRequest
+from github.PullRequestComment import PullRequestComment
 from github.Repository import Repository
 
 from github import Github
@@ -31,6 +32,11 @@ class GitHubClient:
     def get_pull_request(self, pr_number: int) -> PullRequest:
         """Get a pull request by number."""
         return self.repo.get_pull(pr_number)
+
+    def get_bot_comments(self, pr_number: int) -> list[PullRequestComment]:
+        """Fetch all review comments made by github-actions[bot]."""
+        pr = self.get_pull_request(pr_number)
+        return [c for c in pr.get_review_comments() if c.user.login == "github-actions[bot]"]
 
     def get_pr_diff(self, pr_number: int) -> str:
         """Get the unified diff for a pull request."""
