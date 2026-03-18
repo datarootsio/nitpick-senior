@@ -12,6 +12,7 @@ from github import Github
 logger = logging.getLogger(__name__)
 
 GRAPHQL_URL = "https://api.github.com/graphql"
+BOT_USERNAME = "github-actions[bot]"
 
 
 class GitHubClient:
@@ -34,9 +35,9 @@ class GitHubClient:
         return self.repo.get_pull(pr_number)
 
     def get_bot_comments(self, pr_number: int) -> list[PullRequestComment]:
-        """Fetch all review comments made by github-actions[bot]."""
+        """Fetch all review comments made by the bot."""
         pr = self.get_pull_request(pr_number)
-        return [c for c in pr.get_review_comments() if c.user.login == "github-actions[bot]"]
+        return [c for c in pr.get_review_comments() if c.user.login == BOT_USERNAME]
 
     def get_pr_diff(self, pr_number: int) -> str:
         """Get the unified diff for a pull request."""
@@ -57,9 +58,9 @@ class GitHubClient:
         return "\n".join(diff_parts)
 
     def get_bot_issue_comments(self, pr_number: int) -> list:
-        """Fetch all issue comments made by github-actions[bot]."""
+        """Fetch all issue comments made by the bot."""
         pr = self.get_pull_request(pr_number)
-        return [c for c in pr.get_issue_comments() if c.user.login == "github-actions[bot]"]
+        return [c for c in pr.get_issue_comments() if c.user.login == BOT_USERNAME]
 
     def post_comment(self, pr_number: int, body: str) -> None:
         """Post a comment on a pull request."""
@@ -169,8 +170,8 @@ class GitHubClient:
 
         for comment in pr.get_review_comments():
             # Check if this is our bot's comment and on outdated diff
-            # Comments are made by github-actions[bot], outdated when line is None
-            is_bot_comment = comment.user.login == "github-actions[bot]"
+            # Comments are made by the bot, outdated when line is None
+            is_bot_comment = comment.user.login == BOT_USERNAME
             is_outdated = comment.line is None
             if is_bot_comment and is_outdated and self._minimize_comment(comment.node_id):
                 resolved_count += 1
