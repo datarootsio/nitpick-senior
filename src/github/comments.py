@@ -64,7 +64,7 @@ def post_summary_comment(
     summary: str,
     comment_count: int,
 ) -> None:
-    """Post a summary comment on the PR.
+    """Post or update the summary comment on the PR.
 
     Args:
         client: GitHub client
@@ -83,6 +83,18 @@ def post_summary_comment(
     body += BOT_SIGNATURE
 
     try:
+        # Check for existing summary comment to edit
+        existing_comments = client.get_bot_issue_comments(pr_number)
+        for comment in existing_comments:
+            if comment.body.startswith(header):
+                if comment.body != body:
+                    comment.edit(body)
+                    logger.info("Updated existing summary comment")
+                else:
+                    logger.info("Summary comment unchanged, skipping update")
+                return
+
+        # No existing summary, create new
         client.post_comment(pr_number, body)
         logger.info("Posted summary comment")
     except Exception as e:

@@ -56,6 +56,11 @@ class GitHubClient:
 
         return "\n".join(diff_parts)
 
+    def get_bot_issue_comments(self, pr_number: int) -> list:
+        """Fetch all issue comments made by github-actions[bot]."""
+        pr = self.get_pull_request(pr_number)
+        return [c for c in pr.get_issue_comments() if c.user.login == "github-actions[bot]"]
+
     def post_comment(self, pr_number: int, body: str) -> None:
         """Post a comment on a pull request."""
         pr = self.get_pull_request(pr_number)
