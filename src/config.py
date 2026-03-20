@@ -63,6 +63,11 @@ class Config:
         if min_severity not in ("error", "warning", "info"):
             min_severity = "warning"
 
+        # Parse rate limit settings
+        rate_limit_str = os.environ.get("INPUT_RATE_LIMIT", "10")
+        rate_limit = int(rate_limit_str)
+        requests_per_minute = 60 / rate_limit
+
         return cls(
             github_token=github_token,
             model=model,
