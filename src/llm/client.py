@@ -81,7 +81,7 @@ class LLMClient:
 
         agent = Agent(
             self.model,
-            result_type=ReviewResponse,
+            output_type=ReviewResponse,
             system_prompt=system_prompt,
             retries=2,
         )
@@ -100,7 +100,7 @@ class LLMClient:
                     usage.response_tokens or 0,
                 )
 
-            return result.data
+            return result.output
 
         except UnexpectedModelBehavior as e:
             logger.error(f"Model returned unexpected format: {e}")
