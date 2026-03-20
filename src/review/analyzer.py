@@ -55,7 +55,7 @@ def filter_valid_comments(
     return valid_comments
 
 
-def analyze_pr(
+async def analyze_pr(
     github_client: GitHubClient,
     llm_client: LLMClient,
     pr_number: int,
@@ -92,7 +92,7 @@ def analyze_pr(
 
     # Generate review
     logger.info("Generating review...")
-    response = llm_client.review(system_prompt, diff_content)
+    response = await llm_client.review(system_prompt, diff_content)
 
     # Filter comments to only valid lines
     if response.comments:

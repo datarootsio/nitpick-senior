@@ -1,5 +1,6 @@
 """Main entry point for the AI PR Reviewer action."""
 
+import asyncio
 import logging
 import os
 import sys
@@ -24,7 +25,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def main() -> int:
+async def main() -> int:
     """Main entry point."""
     try:
         # Load configuration
@@ -47,7 +48,7 @@ def main() -> int:
 
         # Analyze the PR
         logger.info(f"Analyzing PR #{config.pr_number}...")
-        response = analyze_pr(
+        response = await analyze_pr(
             github_client=github_client,
             llm_client=llm_client,
             pr_number=config.pr_number,
@@ -135,4 +136,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(asyncio.run(main()))

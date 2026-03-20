@@ -1,19 +1,25 @@
-"""LLM client using LiteLLM for provider-agnostic access."""
+"""LLM client using Pydantic AI for provider-agnostic access with structured output."""
 
-import json
 import logging
-import re
+import os
 from dataclasses import dataclass
 
-import litellm
-from pydantic import ValidationError
+from pydantic_ai import Agent
+from pydantic_ai.exceptions import UnexpectedModelBehavior
+from pydantic_ai.models.anthropic import AnthropicModel
+from pydantic_ai.models.openai import OpenAIModel
 
 from .response import ReviewResponse
 
 logger = logging.getLogger(__name__)
 
-# Disable LiteLLM's verbose logging
-litellm.suppress_debug_info = True
+# Pricing per million tokens (input, output)
+MODEL_PRICING = {
+    "gpt-4o": {"input": 2.50, "output": 10.00},
+    "gpt-4o-mini": {"input": 0.15, "output": 0.60},
+    "claude-sonnet-4-5-20250929": {"input": 3.00, "output": 15.00},
+    "claude-3-5-sonnet-20241022": {"input": 3.00, "output": 15.00},
+}
 
 
 @dataclass
@@ -27,19 +33,41 @@ class UsageStats:
     model: str = ""
 
 
+def create_model(model_string: str):
+    """Create a Pydantic AI model from a model string.
+
+    Args:
+        model_string: Model identifier (e.g., "gpt-4o", "anthropic/claude-...", "azure/gpt-4o")
+
+    Returns:
+        Configured Pydantic AI model
+    """
+    if model_string.startswith("anthropic/"):
+        return AnthropicModel(model_string.replace("anthropic/", ""))
+    elif model_string.startswith("azure/"):
+        return OpenAIModel(
+            model_string.replace("azure/", ""),
+            base_url=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+            api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+        )
+    else:
+        return OpenAIModel(model_string)
+
+
 class LLMClient:
-    """Client for interacting with LLMs via LiteLLM."""
+    """Client for interacting with LLMs via Pydantic AI."""
 
     def __init__(self, model: str):
         """Initialize the LLM client.
 
         Args:
-            model: LiteLLM model string (e.g., "gpt-4o", "anthropic/claude-sonnet-4-5-20250929")
+            model: Model string (e.g., "gpt-4o", "anthropic/claude-sonnet-4-5-20250929")
         """
-        self.model = model
+        self.model_string = model
+        self.model = create_model(model)
         self.usage = UsageStats(model=model)
 
-    def review(self, system_prompt: str, diff_content: str) -> ReviewResponse:
+    async def review(self, system_prompt: str, diff_content: str) -> ReviewResponse:
         """Generate a code review for the given diff.
 
         Args:
@@ -51,44 +79,38 @@ class LLMClient:
         """
         user_prompt = self._build_user_prompt(diff_content)
 
+        agent = Agent(
+            self.model,
+            result_type=ReviewResponse,
+            system_prompt=system_prompt,
+            retries=2,
+        )
+
         try:
-            response = litellm.completion(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt},
-                ],
-                temperature=0.3,
-            )
-
-            if not response.choices:
-                raise ValueError("LLM returned empty response")
-
-            content = response.choices[0].message.content
-            if not content:
-                raise ValueError("LLM returned empty message content")
+            result = await agent.run(user_prompt, model_settings={"temperature": 0.3})
 
             # Track usage statistics
-            if hasattr(response, "usage") and response.usage:
-                self.usage.prompt_tokens += response.usage.prompt_tokens or 0
-                self.usage.completion_tokens += response.usage.completion_tokens or 0
-                self.usage.total_tokens += response.usage.total_tokens or 0
+            if result.usage():
+                usage = result.usage()
+                self.usage.prompt_tokens += usage.request_tokens or 0
+                self.usage.completion_tokens += usage.response_tokens or 0
+                self.usage.total_tokens += usage.total_tokens or 0
+                self.usage.cost_usd += self._calculate_cost(
+                    usage.request_tokens or 0,
+                    usage.response_tokens or 0,
+                )
 
-            # Calculate cost using LiteLLM
-            try:
-                cost = litellm.completion_cost(completion_response=response)
-                self.usage.cost_usd += cost
-            except Exception:
-                pass  # Cost calculation not available for all models
+            return result.data
 
-            return self._parse_response(content)
-
+        except UnexpectedModelBehavior as e:
+            logger.error(f"Model returned unexpected format: {e}")
+            return ReviewResponse(summary="Failed to parse review response", comments=[])
         except Exception as e:
             logger.error(f"LLM request failed: {e}")
             raise
 
     def _build_user_prompt(self, diff_content: str) -> str:
-        """Build the user prompt with diff and response format instructions."""
+        """Build the user prompt with diff content."""
         return f"""Review the following code changes and provide feedback.
 
 ## Code Changes (Unified Diff Format)
@@ -96,22 +118,6 @@ class LLMClient:
 ```diff
 {diff_content}
 ```
-
-## Response Format
-
-Respond with a JSON object in this exact format:
-{{
-    "summary": "Brief summary of what this PR does (2-3 sentences)",
-    "comments": [
-        {{
-            "file": "path/to/file.py",
-            "line": 42,
-            "body": "Clear explanation of the issue",
-            "suggestion": "// Optional: suggested fix code",
-            "severity": "warning"
-        }}
-    ]
-}}
 
 Guidelines for comments:
 - MAXIMUM 5 comments total - be extremely selective
@@ -129,39 +135,15 @@ Guidelines for comments:
 
 If there are no significant issues to report, return an empty comments array."""
 
-    def _extract_json(self, content: str) -> str:
-        """Extract JSON from response that may contain markdown or other text."""
-        # Try to find JSON in code blocks first
-        json_block = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", content, re.DOTALL)
-        if json_block:
-            return json_block.group(1)
+    def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
+        """Calculate estimated cost based on token usage."""
+        # Extract the base model name (strip provider prefix)
+        model_name = self.model_string.split("/")[-1]
+        pricing = MODEL_PRICING.get(model_name)
 
-        # Try to find raw JSON object
-        json_match = re.search(r"\{.*\}", content, re.DOTALL)
-        if json_match:
-            return json_match.group(0)
+        if not pricing:
+            return 0.0
 
-        return content
-
-    def _parse_response(self, content: str) -> ReviewResponse:
-        """Parse the LLM response into a ReviewResponse."""
-        # Extract JSON from possibly markdown-wrapped response
-        json_str = self._extract_json(content)
-
-        try:
-            data = json.loads(json_str)
-            return ReviewResponse.model_validate(data)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON response: {e}")
-            logger.debug(f"Response content: {content[:500]}")
-            return ReviewResponse(summary="Failed to parse review response", comments=[])
-        except ValidationError as e:
-            logger.error(f"Response validation failed: {e}")
-            try:
-                data = json.loads(json_str)
-                return ReviewResponse(
-                    summary=data.get("summary", "Review completed"),
-                    comments=[],
-                )
-            except Exception:
-                return ReviewResponse(summary="Failed to validate review response", comments=[])
+        return (input_tokens / 1_000_000) * pricing["input"] + (
+            output_tokens / 1_000_000
+        ) * pricing["output"]
