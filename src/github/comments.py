@@ -123,6 +123,8 @@ def sync_comments(
     existing_by_location: dict[tuple[str, int], PullRequestComment] = {
         (c.path, c.line): c for c in existing if c.line is not None
     }
+    # Track outdated comments (line=None) separately to minimize them
+    outdated_comments = [c for c in existing if c.line is None]
 
     # Index new comments by (file, line)
     new_by_location = {(c.file, c.line): c for c in new_comments[:max_comments]}
@@ -165,6 +167,15 @@ def sync_comments(
                     logger.info(f"Minimized comment on {old_comment.path}:{old_comment.line}")
             except Exception as e:
                 logger.warning(f"Failed to minimize comment: {e}")
+
+    # Minimize outdated comments (line=None means code changed and comment is stale)
+    for old_comment in outdated_comments:
+        try:
+            if client.minimize_comment(old_comment.node_id):
+                minimized += 1
+                logger.info(f"Minimized outdated comment on {old_comment.path}")
+        except Exception as e:
+            logger.warning(f"Failed to minimize outdated comment: {e}")
 
     # Post summary comment
     total_posted = edited + created
