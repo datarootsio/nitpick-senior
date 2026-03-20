@@ -111,9 +111,9 @@ def sync_comments(
 ) -> tuple[int, int, int]:
     """Sync new comments with existing bot comments.
 
-    Edits existing comments at same location, creates new ones, minimizes outdated.
+    Edits existing comments at same location, creates new ones, deletes outdated.
 
-    Returns (edited, created, minimized) counts.
+    Returns (edited, created, deleted) counts.
     """
     pr = client.get_pull_request(pr_number)
     commit_sha = pr.head.sha
@@ -158,24 +158,24 @@ def sync_comments(
             except Exception as e:
                 logger.warning(f"Failed to create comment: {e}")
 
-    # Minimize old comments not in new set
+    # Delete old comments not in new set
     for location, old_comment in existing_by_location.items():
         if location not in new_by_location:
             try:
-                if client.minimize_comment(old_comment.node_id):
+                if client.delete_review_comment(old_comment.id):
                     minimized += 1
-                    logger.info(f"Minimized comment on {old_comment.path}:{old_comment.line}")
+                    logger.info(f"Deleted comment on {old_comment.path}:{old_comment.line}")
             except Exception as e:
-                logger.warning(f"Failed to minimize comment: {e}")
+                logger.warning(f"Failed to delete comment: {e}")
 
-    # Minimize outdated comments (line=None means code changed and comment is stale)
+    # Delete outdated comments (line=None means code changed and comment is stale)
     for old_comment in outdated_comments:
         try:
-            if client.minimize_comment(old_comment.node_id):
+            if client.delete_review_comment(old_comment.id):
                 minimized += 1
-                logger.info(f"Minimized outdated comment on {old_comment.path}")
+                logger.info(f"Deleted outdated comment on {old_comment.path}")
         except Exception as e:
-            logger.warning(f"Failed to minimize outdated comment: {e}")
+            logger.warning(f"Failed to delete outdated comment: {e}")
 
     # Post summary comment
     total_posted = edited + created
