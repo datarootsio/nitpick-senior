@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from src.constants import CHARS_PER_TOKEN
 
 from .extractors.files import fetch_file_content, fetch_readme
-from .extractors.imports import detect_language, extract_imports, resolve_import_path
+from .extractors.imports import detect_language, extract_imports, resolve_import_paths
 from .models import RelatedFile, RepoContext
 
 if TYPE_CHECKING:
@@ -21,6 +21,52 @@ logger = logging.getLogger(__name__)
 DEFAULT_MAX_CONTEXT_TOKENS = 5000
 DEFAULT_MAX_README_TOKENS = 2000
 DEFAULT_MAX_FILE_TOKENS = 1000
+
+# Patterns for sensitive files that should never be included in context
+SENSITIVE_PATTERNS = [
+    ".env",
+    ".key",
+    ".pem",
+    ".p12",
+    ".pfx",
+    "secret",
+    "credential",
+    "password",
+    "token",
+    ".htpasswd",
+    "id_rsa",
+    "id_dsa",
+    "id_ecdsa",
+    "id_ed25519",
+]
+
+# Allowed source code extensions
+ALLOWED_EXTENSIONS = {
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".go",
+    ".java",
+    ".kt",
+    ".rs",
+    ".rb",
+    ".php",
+    ".c",
+    ".cpp",
+    ".h",
+    ".hpp",
+    ".cs",
+    ".swift",
+    ".scala",
+    ".md",
+    ".txt",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".toml",
+}
 
 
 class ContextCollector:
@@ -91,6 +137,11 @@ class ContextCollector:
             if path in changed_files:
                 continue
 
+            # Skip sensitive files
+            if self._is_sensitive_file(path):
+                logger.debug(f"Skipping sensitive file: {path}")
+                continue
+
             content = fetch_file_content(self.github_client, path, ref)
             if content is None:
                 continue
@@ -145,8 +196,8 @@ class ContextCollector:
             imports = extract_imports(content, language)
 
             for import_name in imports:
-                resolved = resolve_import_path(import_name, file_path, language)
-                if resolved:
+                candidates = resolve_import_paths(import_name, file_path, language)
+                for resolved in candidates:
                     # Normalize the path
                     resolved = os.path.normpath(resolved)
                     if not resolved.startswith(".."):
@@ -171,3 +222,23 @@ class ContextCollector:
             truncated = truncated[:last_newline]
 
         return truncated + "\n\n[... truncated ...]"
+
+    def _is_sensitive_file(self, path: str) -> bool:
+        """Check if a file path matches sensitive patterns.
+
+        Args:
+            path: File path to check
+
+        Returns:
+            True if the file should be excluded from context
+        """
+        path_lower = path.lower()
+
+        # Check for sensitive patterns in path
+        for pattern in SENSITIVE_PATTERNS:
+            if pattern in path_lower:
+                return True
+
+        # Check if extension is allowed
+        ext = os.path.splitext(path)[1].lower()
+        return bool(ext and ext not in ALLOWED_EXTENSIONS)

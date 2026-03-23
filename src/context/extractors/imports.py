@@ -110,7 +110,8 @@ def resolve_import_path(import_name: str, source_file: str, language: str) -> st
     if language == "python":
         return _resolve_python_import(import_name, source_dir)
     elif language in ("javascript", "typescript"):
-        return _resolve_js_import(import_name, source_dir)
+        paths = _resolve_js_import(import_name, source_dir)
+        return paths[0] if paths else None
 
     return None
 
@@ -149,11 +150,14 @@ def _resolve_python_import(import_name: str, source_dir: str) -> str | None:
     return candidates[0] if candidates else None
 
 
-def _resolve_js_import(import_name: str, source_dir: str) -> str | None:
-    """Resolve JavaScript/TypeScript import to file path."""
+def _resolve_js_import(import_name: str, source_dir: str) -> list[str]:
+    """Resolve JavaScript/TypeScript import to possible file paths.
+
+    Returns a list of candidate paths to try, in order of preference.
+    """
     # Skip node_modules
     if not import_name.startswith(".") and not import_name.startswith("/"):
-        return None
+        return []
 
     # Resolve relative path
     if import_name.startswith("."):
@@ -161,12 +165,35 @@ def _resolve_js_import(import_name: str, source_dir: str) -> str | None:
     else:
         resolved = import_name.lstrip("/")
 
-    # Add extension if missing
-    if not os.path.splitext(resolved)[1]:
-        # Try common extensions
-        return f"{resolved}.ts"  # Default to .ts, will try others during fetch
+    # If has extension, return as-is
+    if os.path.splitext(resolved)[1]:
+        return [resolved]
 
-    return resolved
+    # Try common extensions in order of preference
+    extensions = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"]
+    return [f"{resolved}{ext}" for ext in extensions]
+
+
+def resolve_import_paths(import_name: str, source_file: str, language: str) -> list[str]:
+    """Resolve an import name to possible file paths within the repo.
+
+    Args:
+        import_name: The imported module/file name
+        source_file: Path of the file containing the import
+        language: Programming language
+
+    Returns:
+        List of possible file paths to try
+    """
+    source_dir = os.path.dirname(source_file)
+
+    if language == "python":
+        path = _resolve_python_import(import_name, source_dir)
+        return [path] if path else []
+    elif language in ("javascript", "typescript"):
+        return _resolve_js_import(import_name, source_dir)
+
+    return []
 
 
 def detect_language(file_path: str) -> str | None:
