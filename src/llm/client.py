@@ -8,6 +8,7 @@ from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models.anthropic import AnthropicModel
 from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
 from .response import ReviewResponse
 
@@ -49,17 +50,17 @@ def create_model(model_string: str):
     if model_string.startswith("anthropic/"):
         return AnthropicModel(model_string.replace("anthropic/", ""))
     elif model_string.startswith("azure/"):
-        return OpenAIModel(
-            model_string.replace("azure/", ""),
+        provider = OpenAIProvider(
             base_url=os.environ.get("AZURE_OPENAI_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
         )
+        return OpenAIModel(model_string.replace("azure/", ""), provider=provider)
     elif model_string.startswith("openrouter/"):
-        return OpenAIModel(
-            model_string.replace("openrouter/", ""),
+        provider = OpenAIProvider(
             base_url="https://openrouter.ai/api/v1",
             api_key=os.environ.get("OPENROUTER_API_KEY"),
         )
+        return OpenAIModel(model_string.replace("openrouter/", ""), provider=provider)
     else:
         return OpenAIModel(model_string)
 
