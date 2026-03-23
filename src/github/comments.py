@@ -52,13 +52,13 @@ def filter_by_severity(comments: list[ReviewComment], min_severity: str) -> list
     return [c for c in comments if SEVERITY_LEVELS.get(c.severity, 1) >= min_level]
 
 
-def format_suggestion_block(suggestion: str) -> str:
-    """Format a code suggestion as a GitHub suggestion block."""
-    return f"\n\n```suggestion\n{suggestion}\n```"
+def format_why_block(why: str) -> str:
+    """Format the root cause explanation."""
+    return f"\n\n**Why this matters:** {why}"
 
 
 def format_comment_body(comment: ReviewComment) -> str:
-    """Format a review comment body with category badge and optional suggestion."""
+    """Format a review comment body with category badge and root cause explanation."""
     severity_emoji = {
         "error": ":x:",
         "warning": ":warning:",
@@ -70,12 +70,16 @@ def format_comment_body(comment: ReviewComment) -> str:
     # Add category badge if present
     if comment.category:
         category_icon = CATEGORY_EMOJI.get(comment.category, "")
-        body = f"{category_icon} **{comment.category}** | {emoji} **{comment.severity.upper()}**\n\n{comment.body}"
+        body = (
+            f"{category_icon} **{comment.category}** | "
+            f"{emoji} **{comment.severity.upper()}**\n\n{comment.body}"
+        )
     else:
         body = f"{emoji} **{comment.severity.upper()}**: {comment.body}"
 
-    if comment.suggestion:
-        body += format_suggestion_block(comment.suggestion)
+    # Add root cause explanation if present
+    if comment.why:
+        body += format_why_block(comment.why)
 
     return body
 

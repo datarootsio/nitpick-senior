@@ -20,9 +20,14 @@ class ReviewComment(BaseModel):
 
     file: str = Field(description="File path relative to repo root")
     line: int = Field(description="Line number in the file (from the new version)")
-    body: str = Field(description="Comment explaining the issue")
-    suggestion: str | None = Field(
-        default=None, description="Optional code suggestion to fix the issue"
+    body: str = Field(
+        description="Comment explaining WHAT is wrong and WHY it's a problem. "
+        "Focus on the root cause, not surface symptoms. Do NOT suggest how to fix it."
+    )
+    why: str | None = Field(
+        default=None,
+        description="Explain the underlying reason this is problematic. "
+        "What assumption is violated? What edge case breaks? What architectural flaw exists?",
     )
     severity: Literal["info", "warning", "error"] = Field(
         default="warning", description="Severity level of the issue"

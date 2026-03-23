@@ -159,13 +159,18 @@ class LLMClient:
 - NEVER comment on the same issue twice, even on different lines
 - If an issue appears multiple times, mention it ONCE with "appears in multiple places"
 - The "line" must be a line number from the NEW version of the file (lines with + prefix)
-- Include a "suggestion" when you have a concrete code fix
 - ALWAYS check: can user/environment input cause division by zero, index errors, or crashes?
 - Do NOT comment on:
   - Style, formatting, naming preferences
   - Unused variables or imports (linters catch these)
   - Missing features or enhancements
   - Hypothetical issues unrelated to actual input paths
+
+## CRITICAL: Do NOT suggest fixes
+- Identify WHAT is wrong and WHY (root cause)
+- Do NOT tell the developer HOW to fix it
+- Use the "why" field to explain the underlying architectural or logical flaw
+- Force the developer to understand the problem deeply enough to fix it completely
 
 If there are no significant issues to report, return an empty comments array.""")
 
