@@ -6,7 +6,7 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from src.constants import CHARS_PER_TOKEN
+from src.utils.tokens import estimate_tokens, truncate_to_tokens
 
 from .extractors.files import fetch_file_content, fetch_readme
 from .extractors.imports import detect_language, extract_imports, resolve_import_paths
@@ -118,8 +118,8 @@ class ContextCollector:
         # 1. Fetch README
         readme = fetch_readme(self.github_client, ref)
         if readme:
-            readme = self._truncate_to_tokens(readme, self.max_readme_tokens)
-            readme_tokens = self._estimate_tokens(readme)
+            readme = truncate_to_tokens(readme, self.max_readme_tokens)
+            readme_tokens = estimate_tokens(readme)
             if tokens_used + readme_tokens <= self.max_context_tokens:
                 context.readme = readme
                 tokens_used += readme_tokens
@@ -146,8 +146,8 @@ class ContextCollector:
             if content is None:
                 continue
 
-            content = self._truncate_to_tokens(content, self.max_file_tokens)
-            file_tokens = self._estimate_tokens(content)
+            content = truncate_to_tokens(content, self.max_file_tokens)
+            file_tokens = estimate_tokens(content)
 
             if tokens_used + file_tokens <= self.max_context_tokens:
                 context.related_files.append(
@@ -204,24 +204,6 @@ class ContextCollector:
                         imported_paths.add(resolved)
 
         return list(imported_paths)
-
-    def _estimate_tokens(self, text: str) -> int:
-        """Estimate token count for text."""
-        return len(text) // CHARS_PER_TOKEN
-
-    def _truncate_to_tokens(self, text: str, max_tokens: int) -> str:
-        """Truncate text to fit within token limit."""
-        max_chars = max_tokens * CHARS_PER_TOKEN
-        if len(text) <= max_chars:
-            return text
-
-        truncated = text[:max_chars]
-        # Try to end at a newline
-        last_newline = truncated.rfind("\n")
-        if last_newline > max_chars * 0.8:
-            truncated = truncated[:last_newline]
-
-        return truncated + "\n\n[... truncated ...]"
 
     def _is_sensitive_file(self, path: str) -> bool:
         """Check if a file path matches sensitive patterns.

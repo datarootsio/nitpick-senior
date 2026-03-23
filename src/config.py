@@ -74,6 +74,11 @@ class Config:
         except ValueError:
             context_max_tokens = 5000
 
+        try:
+            max_comments = int(os.environ.get("INPUT_MAX_COMMENTS", "10"))
+        except ValueError:
+            max_comments = 10
+
         return cls(
             github_token=github_token,
             model=model,
@@ -81,7 +86,7 @@ class Config:
             post_summary=os.environ.get("INPUT_POST_SUMMARY", "true").lower() == "true",
             post_inline_comments=os.environ.get("INPUT_POST_INLINE_COMMENTS", "true").lower()
             == "true",
-            max_comments=int(os.environ.get("INPUT_MAX_COMMENTS", "5")),
+            max_comments=max_comments,
             min_severity=min_severity,
             context_enabled=context_enabled,
             context_max_tokens=context_max_tokens,

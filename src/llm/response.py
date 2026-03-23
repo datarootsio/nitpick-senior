@@ -43,7 +43,7 @@ class ReviewResponse(BaseModel):
     summary: str = Field(description="Brief summary of the PR changes (2-3 sentences)")
     confidence: Literal[1, 2, 3, 4, 5] = Field(
         default=5,
-        description="Confidence score: 5=safe to merge, 4=minor issues, 3=some concerns, 2=significant issues, 1=critical",
+        description="Confidence: 5=safe, 4=minor, 3=concerns, 2=significant, 1=critical",
     )
     important_files: list[FileOverview] = Field(
         default_factory=list, description="Overview of important changed files"

@@ -1,8 +1,17 @@
 """Diff fetching and parsing utilities."""
 
+from __future__ import annotations
+
+import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from unidiff import PatchSet
+
+if TYPE_CHECKING:
+    from src.github.client import GitHubClient
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -15,7 +24,7 @@ class FileChange:
     patch: str  # Raw patch content
 
 
-def get_pr_diff(github_client, pr_number: int) -> str:
+def get_pr_diff(github_client: GitHubClient, pr_number: int) -> str:
     """Fetch the PR diff using the GitHub client."""
     return github_client.get_pr_diff(pr_number)
 
@@ -34,8 +43,8 @@ def parse_diff(diff_content: str) -> list[FileChange]:
 
     try:
         patch_set = PatchSet(diff_content)
-    except Exception:
-        # If parsing fails, return empty list
+    except Exception as e:
+        logger.warning(f"Failed to parse diff: {e}")
         return []
 
     changes = []

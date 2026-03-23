@@ -94,28 +94,6 @@ def _extract_go_imports(content: str) -> list[str]:
     return imports
 
 
-def resolve_import_path(import_name: str, source_file: str, language: str) -> str | None:
-    """Resolve an import name to a file path within the repo.
-
-    Args:
-        import_name: The imported module/file name
-        source_file: Path of the file containing the import
-        language: Programming language
-
-    Returns:
-        Resolved file path or None if not resolvable
-    """
-    source_dir = os.path.dirname(source_file)
-
-    if language == "python":
-        return _resolve_python_import(import_name, source_dir)
-    elif language in ("javascript", "typescript"):
-        paths = _resolve_js_import(import_name, source_dir)
-        return paths[0] if paths else None
-
-    return None
-
-
 def _resolve_python_import(import_name: str, source_dir: str) -> str | None:
     """Resolve Python import to file path."""
     # Skip standard library and third-party packages

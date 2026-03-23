@@ -2,38 +2,17 @@
 
 import logging
 
-from src.constants import CHARS_PER_TOKEN
 from src.context import ContextCollector, RepoContext
 from src.github.client import GitHubClient
 from src.github.diff import get_changed_line_numbers
 from src.llm.client import LLMClient
 from src.llm.response import ReviewComment, ReviewResponse
+from src.utils.tokens import estimate_tokens, truncate_to_tokens
 
 logger = logging.getLogger(__name__)
 
 MAX_DIFF_TOKENS = 30000  # Leave room for response
 DEFAULT_CONTEXT_TOKENS = 5000
-
-
-def estimate_tokens(text: str) -> int:
-    """Estimate token count for text."""
-    return len(text) // CHARS_PER_TOKEN
-
-
-def truncate_diff(diff_content: str, max_tokens: int = MAX_DIFF_TOKENS) -> str:
-    """Truncate diff to fit within token limit."""
-    max_chars = max_tokens * CHARS_PER_TOKEN
-    if len(diff_content) <= max_chars:
-        return diff_content
-
-    # Truncate and add notice
-    truncated = diff_content[:max_chars]
-    # Try to end at a newline
-    last_newline = truncated.rfind("\n")
-    if last_newline > max_chars * 0.8:
-        truncated = truncated[:last_newline]
-
-    return truncated + "\n\n[... diff truncated due to size ...]"
 
 
 def filter_valid_comments(
@@ -118,7 +97,9 @@ async def analyze_pr(
     logger.info(f"Diff size: ~{token_estimate} tokens (max: {max_diff_tokens})")
 
     # Truncate if needed
-    diff_content = truncate_diff(diff_content, max_diff_tokens)
+    diff_content = truncate_to_tokens(
+        diff_content, max_diff_tokens, "[... diff truncated due to size ...]"
+    )
 
     # Generate review
     logger.info("Generating review...")

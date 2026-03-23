@@ -29,7 +29,7 @@ inputs:
   max_comments:
     description: 'Maximum inline comments to post'
     required: false
-    default: '5'
+    default: '10'
 
   min_severity:
     description: 'Minimum severity to post (error, warning, info)'
