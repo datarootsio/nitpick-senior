@@ -63,6 +63,12 @@ class Config:
         if min_severity not in ("error", "warning", "info"):
             min_severity = "warning"
 
+        # Setup cache directory for storing review state
+        cache_dir = os.environ.get("INPUT_CACHE_DIR", "/tmp/reviewer-cache")
+        cache_name = os.environ.get("INPUT_CACHE_NAME", "state")
+        cache_path = os.path.join(cache_dir, cache_name + ".json")
+        os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+
         return cls(
             github_token=github_token,
             model=model,
