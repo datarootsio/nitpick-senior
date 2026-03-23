@@ -17,9 +17,9 @@ incomplete fixes and whack-a-mole debugging.
 ## Issue Categories
 
 Use these categories for the `category` field:
-- **Security**: SQL injection, XSS, command injection, path traversal, secrets in code, auth bypasses
+- **Security**: SQL injection, XSS, command injection, path traversal, secrets, auth bypasses
 - **Bug**: Runtime errors, null/None dereference, logic errors, off-by-one, race conditions
-- **Reliability**: Missing error handling, unclosed resources, timeout issues, missing validation
+- **Reliability**: Missing error handling, unclosed resources, timeout issues, validation
 - **Performance**: N+1 queries, unnecessary loops, memory leaks, unbounded growth
 - **Correctness**: Spec deviations, incorrect behavior, breaking changes
 

@@ -59,7 +59,7 @@ def fetch_file_content(
         content = github_client.get_file_content(path, ref)
         return content
     except Exception as e:
-        logger.debug(f"Could not fetch {path}: {e}")
+        logger.warning(f"Could not fetch {path} at ref {ref}: {type(e).__name__}: {e}")
         return None
 
 

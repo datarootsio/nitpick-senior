@@ -79,7 +79,8 @@ class GitHubClient:
                 return None
 
             return contents.decoded_content.decode("utf-8")
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to fetch file {path}: {e}")
             return None
 
     def get_changed_files(self, pr_number: int) -> list[str]:

@@ -3,7 +3,7 @@
 from src.context.extractors.imports import (
     detect_language,
     extract_imports,
-    resolve_import_path,
+    resolve_import_paths,
 )
 
 
@@ -123,31 +123,31 @@ import (
         assert "github.com/user/pkg" in imports
 
 
-class TestResolvePythonImportPath:
+class TestResolvePythonImportPaths:
     def test_relative_import_same_dir(self):
-        path = resolve_import_path(".utils", "src/main.py", "python")
-        assert path == "src/utils.py"
+        paths = resolve_import_paths(".utils", "src/main.py", "python")
+        assert paths == ["src/utils.py"]
 
     def test_relative_import_parent_dir(self):
-        path = resolve_import_path("..models", "src/api/handlers.py", "python")
-        assert path == "src/models.py"
+        paths = resolve_import_paths("..models", "src/api/handlers.py", "python")
+        assert paths == ["src/models.py"]
 
     def test_absolute_import_skipped(self):
-        # stdlib imports should return None
-        path = resolve_import_path("os", "src/main.py", "python")
-        assert path is None
+        # stdlib imports should return empty list
+        paths = resolve_import_paths("os", "src/main.py", "python")
+        assert paths == []
 
 
-class TestResolveJSImportPath:
+class TestResolveJSImportPaths:
     def test_relative_import(self):
-        path = resolve_import_path("./utils", "src/main.ts", "typescript")
-        assert path is not None
-        assert "utils" in path
+        paths = resolve_import_paths("./utils", "src/main.ts", "typescript")
+        assert len(paths) > 0
+        assert any("utils" in p for p in paths)
 
     def test_node_modules_skipped(self):
-        path = resolve_import_path("react", "src/main.tsx", "typescript")
-        assert path is None
+        paths = resolve_import_paths("react", "src/main.tsx", "typescript")
+        assert paths == []
 
     def test_scoped_package_skipped(self):
-        path = resolve_import_path("@types/node", "src/main.ts", "typescript")
-        assert path is None
+        paths = resolve_import_paths("@types/node", "src/main.ts", "typescript")
+        assert paths == []
