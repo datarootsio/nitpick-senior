@@ -18,6 +18,6 @@ jobs:
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: openrouter/anthropic/claude-sonnet-4-5-20250929
+          model: openrouter/stepfun/step-3.5-flash:free
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
