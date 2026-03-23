@@ -69,7 +69,10 @@ class Config:
 
         # Context settings
         context_enabled = os.environ.get("INPUT_CONTEXT_ENABLED", "true").lower() == "true"
-        context_max_tokens = int(os.environ.get("INPUT_CONTEXT_MAX_TOKENS", "5000"))
+        try:
+            context_max_tokens = int(os.environ.get("INPUT_CONTEXT_MAX_TOKENS", "5000"))
+        except ValueError:
+            context_max_tokens = 5000
 
         return cls(
             github_token=github_token,

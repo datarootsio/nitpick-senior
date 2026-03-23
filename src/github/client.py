@@ -92,8 +92,8 @@ class GitHubClient:
             List of file paths that were changed
         """
         pr = self.get_pull_request(pr_number)
-        comparison = self.repo.compare(pr.base.sha, pr.head.sha)
-        return [f.filename for f in comparison.files]
+        # Use pr.get_files() instead of repo.compare() to support forked PRs
+        return [f.filename for f in pr.get_files()]
 
     def get_bot_issue_comments(self, pr_number: int) -> list[IssueComment]:
         """Fetch all issue comments made by the bot."""

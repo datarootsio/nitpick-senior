@@ -111,7 +111,7 @@ async def analyze_pr(
     # Calculate available tokens for diff (reduce if context was collected)
     max_diff_tokens = MAX_DIFF_TOKENS
     if context:
-        max_diff_tokens = MAX_DIFF_TOKENS - context.total_tokens
+        max_diff_tokens = max(0, MAX_DIFF_TOKENS - context.total_tokens)
 
     # Log diff size
     token_estimate = estimate_tokens(diff_content)
