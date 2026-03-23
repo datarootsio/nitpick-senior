@@ -1,8 +1,11 @@
 """LLM client using Pydantic AI for provider-agnostic access with structured output."""
 
+from __future__ import annotations
+
 import logging
 import os
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
@@ -11,6 +14,9 @@ from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from .response import ReviewResponse
+
+if TYPE_CHECKING:
+    from src.context import RepoContext
 
 logger = logging.getLogger(__name__)
 
@@ -78,17 +84,23 @@ class LLMClient:
         self.model = create_model(model)
         self.usage = UsageStats(model=model)
 
-    async def review(self, system_prompt: str, diff_content: str) -> ReviewResponse:
+    async def review(
+        self,
+        system_prompt: str,
+        diff_content: str,
+        context: RepoContext | None = None,
+    ) -> ReviewResponse:
         """Generate a code review for the given diff.
 
         Args:
             system_prompt: The agent specification / system prompt
             diff_content: The PR diff content to review
+            context: Optional repository context
 
         Returns:
             ReviewResponse with summary and comments
         """
-        user_prompt = self._build_user_prompt(diff_content)
+        user_prompt = self._build_user_prompt(diff_content, context)
 
         agent = Agent(
             self.model,
@@ -120,17 +132,27 @@ class LLMClient:
             logger.error(f"LLM request failed: {e}")
             raise
 
-    def _build_user_prompt(self, diff_content: str) -> str:
-        """Build the user prompt with diff content."""
-        return f"""Review the following code changes and provide feedback.
+    def _build_user_prompt(
+        self,
+        diff_content: str,
+        context: RepoContext | None = None,
+    ) -> str:
+        """Build the user prompt with diff content and optional context."""
+        sections = []
 
-## Code Changes (Unified Diff Format)
+        # Add context section if available
+        if context and not context.is_empty():
+            sections.append(self._build_context_section(context))
+
+        # Add diff section
+        sections.append(f"""## Code Changes (Unified Diff Format)
 
 ```diff
 {diff_content}
-```
+```""")
 
-Guidelines for comments:
+        # Add guidelines
+        sections.append("""## Guidelines for comments:
 - MAXIMUM 5 comments total - be extremely selective
 - Only comment on bugs, security issues, or serious problems
 - Use "error" for critical issues, "warning" for significant problems
@@ -145,7 +167,31 @@ Guidelines for comments:
   - Missing features or enhancements
   - Hypothetical issues unrelated to actual input paths
 
-If there are no significant issues to report, return an empty comments array."""
+If there are no significant issues to report, return an empty comments array.""")
+
+        return "Review the following code changes and provide feedback.\n\n" + "\n\n".join(
+            sections
+        )
+
+    def _build_context_section(self, context: RepoContext) -> str:
+        """Build the context section of the prompt."""
+        parts = ["## Repository Context"]
+
+        if context.readme:
+            parts.append(f"""### README
+```
+{context.readme}
+```""")
+
+        if context.related_files:
+            parts.append("### Related Files")
+            for file in context.related_files:
+                parts.append(f"""#### {file.path} (reason: {file.reason})
+```
+{file.content}
+```""")
+
+        return "\n\n".join(parts)
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         """Calculate estimated cost based on token usage."""

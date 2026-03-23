@@ -48,11 +48,14 @@ async def main() -> int:
 
         # Analyze the PR
         logger.info(f"Analyzing PR #{config.pr_number}...")
+        logger.info(f"Context collection: {'enabled' if config.context_enabled else 'disabled'}")
         response = await analyze_pr(
             github_client=github_client,
             llm_client=llm_client,
             pr_number=config.pr_number,
             system_prompt=system_prompt,
+            context_enabled=config.context_enabled,
+            context_max_tokens=config.context_max_tokens,
         )
 
         # Deduplicate comments first

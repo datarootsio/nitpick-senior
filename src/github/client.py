@@ -58,6 +58,43 @@ class GitHubClient:
 
         return "\n".join(diff_parts)
 
+    def get_file_content(self, path: str, ref: str | None = None) -> str | None:
+        """Get the content of a file from the repository.
+
+        Args:
+            path: File path relative to repo root
+            ref: Git ref (branch, tag, commit SHA) to fetch from. Defaults to default branch.
+
+        Returns:
+            File content as string, or None if file not found
+        """
+        try:
+            if ref:
+                contents = self.repo.get_contents(path, ref=ref)
+            else:
+                contents = self.repo.get_contents(path)
+
+            # get_contents can return a list for directories
+            if isinstance(contents, list):
+                return None
+
+            return contents.decoded_content.decode("utf-8")
+        except Exception:
+            return None
+
+    def get_changed_files(self, pr_number: int) -> list[str]:
+        """Get list of changed file paths in a PR.
+
+        Args:
+            pr_number: Pull request number
+
+        Returns:
+            List of file paths that were changed
+        """
+        pr = self.get_pull_request(pr_number)
+        comparison = self.repo.compare(pr.base.sha, pr.head.sha)
+        return [f.filename for f in comparison.files]
+
     def get_bot_issue_comments(self, pr_number: int) -> list[IssueComment]:
         """Fetch all issue comments made by the bot."""
         pr = self.get_pull_request(pr_number)

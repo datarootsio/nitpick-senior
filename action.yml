@@ -41,6 +41,16 @@ inputs:
     required: false
     default: 'true'
 
+  context_enabled:
+    description: 'Include repository context (README, imported files) in review'
+    required: false
+    default: 'true'
+
+  context_max_tokens:
+    description: 'Maximum tokens for repository context'
+    required: false
+    default: '5000'
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -53,6 +63,8 @@ runs:
     INPUT_MAX_COMMENTS: ${{ inputs.max_comments }}
     INPUT_MIN_SEVERITY: ${{ inputs.min_severity }}
     INPUT_RESOLVE_OUTDATED: ${{ inputs.resolve_outdated }}
+    INPUT_CONTEXT_ENABLED: ${{ inputs.context_enabled }}
+    INPUT_CONTEXT_MAX_TOKENS: ${{ inputs.context_max_tokens }}
 
 branding:
   icon: 'eye'

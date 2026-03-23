@@ -17,6 +17,10 @@ class Config:
     max_comments: int
     min_severity: str
 
+    # Context settings
+    context_enabled: bool
+    context_max_tokens: int
+
     # GitHub context
     repo_owner: str
     repo_name: str
@@ -63,6 +67,10 @@ class Config:
         if min_severity not in ("error", "warning", "info"):
             min_severity = "warning"
 
+        # Context settings
+        context_enabled = os.environ.get("INPUT_CONTEXT_ENABLED", "true").lower() == "true"
+        context_max_tokens = int(os.environ.get("INPUT_CONTEXT_MAX_TOKENS", "5000"))
+
         return cls(
             github_token=github_token,
             model=model,
@@ -72,6 +80,8 @@ class Config:
             == "true",
             max_comments=int(os.environ.get("INPUT_MAX_COMMENTS", "5")),
             min_severity=min_severity,
+            context_enabled=context_enabled,
+            context_max_tokens=context_max_tokens,
             repo_owner=repo_owner,
             repo_name=repo_name,
             pr_number=pr_number,

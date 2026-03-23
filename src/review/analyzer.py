@@ -3,6 +3,7 @@
 import logging
 
 from src.constants import CHARS_PER_TOKEN
+from src.context import ContextCollector, RepoContext
 from src.github.client import GitHubClient
 from src.github.diff import get_changed_line_numbers
 from src.llm.client import LLMClient
@@ -11,6 +12,7 @@ from src.llm.response import ReviewComment, ReviewResponse
 logger = logging.getLogger(__name__)
 
 MAX_DIFF_TOKENS = 30000  # Leave room for response
+DEFAULT_CONTEXT_TOKENS = 5000
 
 
 def estimate_tokens(text: str) -> int:
@@ -60,6 +62,8 @@ async def analyze_pr(
     llm_client: LLMClient,
     pr_number: int,
     system_prompt: str,
+    context_enabled: bool = True,
+    context_max_tokens: int = DEFAULT_CONTEXT_TOKENS,
 ) -> ReviewResponse:
     """Analyze a pull request and generate review feedback.
 
@@ -68,6 +72,8 @@ async def analyze_pr(
         llm_client: LLM client for review generation
         pr_number: Pull request number to analyze
         system_prompt: Agent specification / system prompt
+        context_enabled: Whether to collect repository context
+        context_max_tokens: Maximum tokens for context
 
     Returns:
         ReviewResponse with summary and comments
@@ -83,16 +89,40 @@ async def analyze_pr(
             comments=[],
         )
 
+    # Collect repository context
+    context: RepoContext | None = None
+    if context_enabled:
+        logger.info("Collecting repository context...")
+        changed_files = github_client.get_changed_files(pr_number)
+        collector = ContextCollector(
+            github_client=github_client,
+            max_context_tokens=context_max_tokens,
+        )
+        context = await collector.collect(pr_number, changed_files, diff_content)
+        if context.is_empty():
+            logger.info("No context collected")
+            context = None
+        else:
+            logger.info(
+                f"Context collected: {context.total_tokens} tokens, "
+                f"{len(context.related_files)} related files"
+            )
+
+    # Calculate available tokens for diff (reduce if context was collected)
+    max_diff_tokens = MAX_DIFF_TOKENS
+    if context:
+        max_diff_tokens = MAX_DIFF_TOKENS - context.total_tokens
+
     # Log diff size
     token_estimate = estimate_tokens(diff_content)
-    logger.info(f"Diff size: ~{token_estimate} tokens")
+    logger.info(f"Diff size: ~{token_estimate} tokens (max: {max_diff_tokens})")
 
     # Truncate if needed
-    diff_content = truncate_diff(diff_content)
+    diff_content = truncate_diff(diff_content, max_diff_tokens)
 
     # Generate review
     logger.info("Generating review...")
-    response = await llm_client.review(system_prompt, diff_content)
+    response = await llm_client.review(system_prompt, diff_content, context)
 
     # Filter comments to only valid lines
     if response.comments:
