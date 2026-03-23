@@ -37,7 +37,11 @@ def create_model(model_string: str):
     """Create a Pydantic AI model from a model string.
 
     Args:
-        model_string: Model identifier (e.g., "gpt-4o", "anthropic/claude-...", "azure/gpt-4o")
+        model_string: Model identifier. Supported formats:
+            - "gpt-4o" (OpenAI)
+            - "anthropic/claude-..." (Anthropic)
+            - "azure/gpt-4o" (Azure OpenAI)
+            - "openrouter/provider/model" (OpenRouter)
 
     Returns:
         Configured Pydantic AI model
@@ -49,6 +53,12 @@ def create_model(model_string: str):
             model_string.replace("azure/", ""),
             base_url=os.environ.get("AZURE_OPENAI_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+        )
+    elif model_string.startswith("openrouter/"):
+        return OpenAIModel(
+            model_string.replace("openrouter/", ""),
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.environ.get("OPENROUTER_API_KEY"),
         )
     else:
         return OpenAIModel(model_string)
