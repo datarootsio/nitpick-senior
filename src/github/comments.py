@@ -162,7 +162,7 @@ def sync_comments(
     for location, old_comment in existing_by_location.items():
         if location not in new_by_location:
             try:
-                if client.delete_review_comment(old_comment.id):
+                if client.delete_review_comment(old_comment):
                     minimized += 1
                     logger.info(f"Deleted comment on {old_comment.path}:{old_comment.line}")
             except Exception as e:
@@ -171,7 +171,7 @@ def sync_comments(
     # Delete outdated comments (line=None means code changed and comment is stale)
     for old_comment in outdated_comments:
         try:
-            if client.delete_review_comment(old_comment.id):
+            if client.delete_review_comment(old_comment):
                 minimized += 1
                 logger.info(f"Deleted outdated comment on {old_comment.path}")
         except Exception as e:

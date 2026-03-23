@@ -137,19 +137,18 @@ class GitHubClient:
 
         return True
 
-    def delete_review_comment(self, comment_id: int) -> bool:
+    def delete_review_comment(self, comment: PullRequestComment) -> bool:
         """Delete a review comment.
 
         Args:
-            comment_id: The ID of the review comment to delete
+            comment: The PullRequestComment object to delete
 
         Returns:
             True if successful, False otherwise
         """
         try:
-            comment = self.repo.get_pull_comment(comment_id)
             comment.delete()
             return True
         except Exception as e:
-            logger.warning(f"Failed to delete comment {comment_id}: {e}")
+            logger.warning(f"Failed to delete comment {comment.id}: {e}")
             return False
