@@ -5,6 +5,16 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
+class FileOverview(BaseModel):
+    """Summary of changes to a single file."""
+
+    file: str = Field(description="File path relative to repo root")
+    overview: str = Field(description="Brief description of what changed")
+    change_type: Literal[
+        "Enhancement", "Bug fix", "Refactoring", "Configuration", "Documentation", "Tests"
+    ] = Field(default="Enhancement", description="Type of change")
+
+
 class ReviewComment(BaseModel):
     """A single inline review comment."""
 
@@ -17,12 +27,22 @@ class ReviewComment(BaseModel):
     severity: Literal["info", "warning", "error"] = Field(
         default="warning", description="Severity level of the issue"
     )
+    category: Literal["Security", "Bug", "Reliability", "Performance", "Correctness"] | None = (
+        Field(default=None, description="Issue category for grouping")
+    )
 
 
 class ReviewResponse(BaseModel):
     """Complete review response from the LLM."""
 
     summary: str = Field(description="Brief summary of the PR changes (2-3 sentences)")
+    confidence: Literal[1, 2, 3, 4, 5] = Field(
+        default=5,
+        description="Confidence score: 5=safe to merge, 4=minor issues, 3=some concerns, 2=significant issues, 1=critical",
+    )
+    important_files: list[FileOverview] = Field(
+        default_factory=list, description="Overview of important changed files"
+    )
     comments: list[ReviewComment] = Field(
         default_factory=list, description="List of inline review comments"
     )

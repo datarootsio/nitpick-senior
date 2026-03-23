@@ -5,7 +5,7 @@ import logging
 from github.PullRequestComment import PullRequestComment
 
 from src.github.client import GitHubClient
-from src.llm.response import ReviewComment
+from src.llm.response import ReviewComment, ReviewResponse
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +14,22 @@ BOT_REPO = "https://github.com/datarootsio/github-reviewer"
 BOT_SIGNATURE = f"\n\n---\n:nerd_face: *Um, actually... reviewed by [{BOT_NAME}]({BOT_REPO})*"
 
 SEVERITY_LEVELS = {"error": 3, "warning": 2, "info": 1}
+
+CATEGORY_EMOJI = {
+    "Security": ":lock:",
+    "Bug": ":bug:",
+    "Reliability": ":zap:",
+    "Performance": ":chart_with_upwards_trend:",
+    "Correctness": ":white_check_mark:",
+}
+
+CONFIDENCE_LABELS = {
+    5: ":white_check_mark: **Safe to merge** - no issues found",
+    4: ":white_check_mark: **Safe to merge** - minor issues only",
+    3: ":warning: **Review recommended** - some concerns",
+    2: ":warning: **Changes needed** - significant issues",
+    1: ":x: **Do not merge** - critical issues",
+}
 
 
 def deduplicate_comments(comments: list[ReviewComment]) -> list[ReviewComment]:
@@ -42,7 +58,7 @@ def format_suggestion_block(suggestion: str) -> str:
 
 
 def format_comment_body(comment: ReviewComment) -> str:
-    """Format a review comment body with optional suggestion."""
+    """Format a review comment body with category badge and optional suggestion."""
     severity_emoji = {
         "error": ":x:",
         "warning": ":warning:",
@@ -50,7 +66,13 @@ def format_comment_body(comment: ReviewComment) -> str:
     }
 
     emoji = severity_emoji.get(comment.severity, ":warning:")
-    body = f"{emoji} **{comment.severity.upper()}**: {comment.body}"
+
+    # Add category badge if present
+    if comment.category:
+        category_icon = CATEGORY_EMOJI.get(comment.category, "")
+        body = f"{category_icon} **{comment.category}** | {emoji} **{comment.severity.upper()}**\n\n{comment.body}"
+    else:
+        body = f"{emoji} **{comment.severity.upper()}**: {comment.body}"
 
     if comment.suggestion:
         body += format_suggestion_block(comment.suggestion)
@@ -58,29 +80,75 @@ def format_comment_body(comment: ReviewComment) -> str:
     return body
 
 
+def format_enhanced_summary(response: ReviewResponse, comment_count: int) -> str:
+    """Format the enhanced review summary with confidence and file overviews.
+
+    Args:
+        response: The structured review response from the LLM
+        comment_count: Number of inline comments posted
+
+    Returns:
+        Formatted markdown summary
+    """
+    header = f"## :nerd_face: {BOT_NAME} Review"
+    lines = [header, "", response.summary, ""]
+
+    # Confidence score
+    confidence_label = CONFIDENCE_LABELS.get(response.confidence, "")
+    lines.append(f"### Confidence: {response.confidence}/5")
+    lines.append(confidence_label)
+    lines.append("")
+
+    # Important files table
+    if response.important_files:
+        lines.append("### Files Changed")
+        lines.append("")
+        lines.append("| File | Type | Overview |")
+        lines.append("|------|------|----------|")
+        for f in response.important_files:
+            lines.append(f"| `{f.file}` | {f.change_type} | {f.overview} |")
+        lines.append("")
+
+    # Issues summary grouped by category
+    if comment_count > 0:
+        lines.append(f"### Issues Found ({comment_count})")
+        lines.append("")
+    else:
+        lines.append(":white_check_mark: No issues found in the code changes.")
+        lines.append("")
+
+    lines.append(BOT_SIGNATURE)
+    return "\n".join(lines)
+
+
 def post_summary_comment(
     client: GitHubClient,
     pr_number: int,
     summary: str,
     comment_count: int,
+    response: ReviewResponse | None = None,
 ) -> None:
     """Post or update the summary comment on the PR.
 
     Args:
         client: GitHub client
         pr_number: Pull request number
-        summary: Review summary text
+        summary: Review summary text (fallback if response not provided)
         comment_count: Number of inline comments posted
+        response: Optional structured review response for enhanced formatting
     """
     header = f"## :nerd_face: {BOT_NAME} Review"
-    body = f"{header}\n\n{summary}\n\n"
 
-    if comment_count > 0:
-        body += f"Posted **{comment_count}** inline comment(s) on the code changes."
+    if response:
+        body = format_enhanced_summary(response, comment_count)
     else:
-        body += "No issues found in the code changes."
-
-    body += BOT_SIGNATURE
+        # Fallback to simple format
+        body = f"{header}\n\n{summary}\n\n"
+        if comment_count > 0:
+            body += f"Posted **{comment_count}** inline comment(s) on the code changes."
+        else:
+            body += "No issues found in the code changes."
+        body += BOT_SIGNATURE
 
     try:
         # Check for existing summary comment to edit
@@ -108,10 +176,19 @@ def sync_comments(
     summary: str,
     new_comments: list[ReviewComment],
     max_comments: int = 20,
+    response: ReviewResponse | None = None,
 ) -> tuple[int, int, int]:
     """Sync new comments with existing bot comments.
 
     Edits existing comments at same location, creates new ones, deletes outdated.
+
+    Args:
+        client: GitHub client
+        pr_number: Pull request number
+        summary: Review summary text
+        new_comments: List of review comments to post
+        max_comments: Maximum number of inline comments
+        response: Optional structured review response for enhanced summary
 
     Returns (edited, created, deleted) counts.
     """
@@ -179,6 +256,6 @@ def sync_comments(
 
     # Post summary comment
     total_posted = edited + created
-    post_summary_comment(client, pr_number, summary, total_posted)
+    post_summary_comment(client, pr_number, summary, total_posted, response)
 
     return edited, created, minimized
