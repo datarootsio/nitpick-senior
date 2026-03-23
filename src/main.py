@@ -79,6 +79,7 @@ async def main() -> int:
                 summary=response.summary,
                 new_comments=filtered_comments,
                 max_comments=config.max_comments,
+                response=response,
             )
             comment_count = edited + created
             logger.info(
@@ -91,6 +92,7 @@ async def main() -> int:
                 pr_number=config.pr_number,
                 summary=response.summary,
                 comment_count=0,
+                response=response,
             )
             comment_count = 0
         else:
