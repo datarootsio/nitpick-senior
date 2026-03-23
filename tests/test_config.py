@@ -117,6 +117,16 @@ class TestConfigFromEnv:
         config = Config.from_env()
         assert config.context_max_tokens == 5000
 
+    def test_max_comments_invalid_defaults(self, monkeypatch):
+        monkeypatch.setenv("INPUT_GITHUB_TOKEN", "test-token")
+        monkeypatch.setenv("INPUT_MODEL", "gpt-4o")
+        monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+        monkeypatch.setenv("PR_NUMBER", "1")
+        monkeypatch.setenv("INPUT_MAX_COMMENTS", "not-a-number")
+
+        config = Config.from_env()
+        assert config.max_comments == 10
+
     def test_fallback_to_github_token(self, monkeypatch):
         monkeypatch.delenv("INPUT_GITHUB_TOKEN", raising=False)
         monkeypatch.setenv("GITHUB_TOKEN", "fallback-token")
