@@ -1,5 +1,6 @@
 """Azure DevOps provider implementation."""
 
+import difflib
 import logging
 
 from azure.devops.connection import Connection
@@ -87,6 +88,8 @@ class AzureDevOpsProvider(BaseProvider):
 
     def get_pr_diff(self, pr_number: int) -> str:
         """Get the unified diff for a pull request."""
+        pr_info = self.get_pull_request(pr_number)
+
         iterations = self.git_client.get_pull_request_iterations(
             repository_id=self.repository_id,
             pull_request_id=pr_number,
@@ -106,15 +109,35 @@ class AzureDevOpsProvider(BaseProvider):
 
         diff_parts = []
         for change in changes.change_entries or []:
-            if change.item and change.item.path:
-                path = change.item.path.lstrip("/")
-                diff_parts.append(f"diff --git a/{path} b/{path}")
-                diff_parts.append(f"--- a/{path}")
-                diff_parts.append(f"+++ b/{path}")
-                # Azure DevOps doesn't provide patch content directly
-                # We'd need to fetch file content and compute diff
-                diff_parts.append(f"# Change type: {change.change_type}")
-                diff_parts.append("")
+            if not (change.item and change.item.path):
+                continue
+
+            path = change.item.path.lstrip("/")
+            change_type = str(change.change_type).lower() if change.change_type else ""
+
+            # Fetch file content at base and head commits
+            if "delete" in change_type:
+                base_content = self.get_file_content(path, pr_info.base_sha) or ""
+                head_content = ""
+            elif "add" in change_type:
+                base_content = ""
+                head_content = self.get_file_content(path, pr_info.head_sha) or ""
+            else:
+                base_content = self.get_file_content(path, pr_info.base_sha) or ""
+                head_content = self.get_file_content(path, pr_info.head_sha) or ""
+
+            # Compute unified diff
+            diff_lines = list(
+                difflib.unified_diff(
+                    base_content.splitlines(keepends=True),
+                    head_content.splitlines(keepends=True),
+                    fromfile=f"a/{path}",
+                    tofile=f"b/{path}",
+                )
+            )
+
+            if diff_lines:
+                diff_parts.append("".join(diff_lines))
 
         return "\n".join(diff_parts)
 
