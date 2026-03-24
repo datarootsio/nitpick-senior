@@ -153,13 +153,31 @@ class GitHubProvider(BaseProvider):
             return False
 
     def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
-        """Edit an existing issue comment."""
+        """Edit an existing issue comment using direct REST API.
+
+        Uses PATCH /repos/{owner}/{repo}/issues/comments/{comment_id} directly
+        to avoid permission issues with the Issues API that PyGithub uses.
+        """
+        url = f"https://api.github.com/repos/{self.repo.full_name}/issues/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            issue = self.repo.get_issue(pr_number)
-            comment = issue.get_comment(int(comment_id))
-            comment.edit(body)
-            return True
-        except Exception as e:
+            response = requests.patch(
+                url,
+                json={"body": body},
+                headers=headers,
+                timeout=30,
+            )
+            if response.status_code == 200:
+                return True
+            logger.warning(
+                f"Failed to edit issue comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
             logger.warning(f"Failed to edit issue comment {comment_id}: {e}")
             return False
 

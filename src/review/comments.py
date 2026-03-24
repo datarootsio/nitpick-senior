@@ -74,13 +74,16 @@ def post_summary_comment(
         for comment in existing_comments:
             if comment.body.startswith(header):
                 if comment.body != body:
-                    provider.edit_issue_comment(pr_number, comment.id, body)
-                    logger.info("Updated existing summary comment")
+                    if provider.edit_issue_comment(pr_number, comment.id, body):
+                        logger.info("Updated existing summary comment")
+                        return
+                    # Edit failed, fall through to create new comment
+                    logger.warning("Failed to edit summary comment, creating new one")
                 else:
                     logger.info("Summary comment unchanged, skipping update")
-                return
+                    return
 
-        # No existing summary, create new
+        # No existing summary or edit failed, create new
         provider.post_issue_comment(pr_number, body)
         logger.info("Posted summary comment")
     except Exception as e:
