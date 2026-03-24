@@ -1,0 +1,23 @@
+# .github/workflows/publish.yml
+name: Publish Docker Image
+on:
+  push:
+    tags: ['v*']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: |
+            ghcr.io/datarootsio/nitpick-senior:${{ github.ref_name }}
+            ghcr.io/datarootsio/nitpick-senior:latest
