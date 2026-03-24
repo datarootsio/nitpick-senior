@@ -39,11 +39,12 @@ class TestConfigFromEnv:
     def test_missing_token_raises(self, monkeypatch):
         monkeypatch.delenv("INPUT_GITHUB_TOKEN", raising=False)
         monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+        monkeypatch.delenv("INPUT_TOKEN", raising=False)
         monkeypatch.setenv("INPUT_MODEL", "gpt-4o")
         monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
         monkeypatch.setenv("PR_NUMBER", "1")
 
-        with pytest.raises(ValueError, match="GitHub token is required"):
+        with pytest.raises(ValueError, match="Authentication token is required"):
             Config.from_env()
 
     def test_missing_model_raises(self, monkeypatch):

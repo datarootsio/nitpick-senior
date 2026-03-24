@@ -1,11 +1,13 @@
 """Comment posting utilities."""
 
 import logging
+from typing import TYPE_CHECKING
 
-from github.PullRequestComment import PullRequestComment
-
-from src.github.client import GitHubClient
 from src.llm.response import ReviewComment, ReviewResponse
+from src.providers import ReviewCommentInfo
+
+if TYPE_CHECKING:
+    from src.providers import GitProvider
 
 logger = logging.getLogger(__name__)
 
@@ -126,7 +128,7 @@ def format_enhanced_summary(response: ReviewResponse, comment_count: int) -> str
 
 
 def post_summary_comment(
-    client: GitHubClient,
+    provider: "GitProvider",
     pr_number: int,
     summary: str,
     comment_count: int,
@@ -135,7 +137,7 @@ def post_summary_comment(
     """Post or update the summary comment on the PR.
 
     Args:
-        client: GitHub client
+        provider: Git provider (GitHub, GitLab, etc.)
         pr_number: Pull request number
         summary: Review summary text (fallback if response not provided)
         comment_count: Number of inline comments posted
@@ -156,18 +158,18 @@ def post_summary_comment(
 
     try:
         # Check for existing summary comment to edit
-        existing_comments = client.get_bot_issue_comments(pr_number)
+        existing_comments = provider.get_bot_issue_comments(pr_number)
         for comment in existing_comments:
             if comment.body.startswith(header):
                 if comment.body != body:
-                    comment.edit(body)
+                    provider.edit_issue_comment(comment.id, body)
                     logger.info("Updated existing summary comment")
                 else:
                     logger.info("Summary comment unchanged, skipping update")
                 return
 
         # No existing summary, create new
-        client.post_comment(pr_number, body)
+        provider.post_issue_comment(pr_number, body)
         logger.info("Posted summary comment")
     except Exception as e:
         logger.error(f"Failed to post summary comment: {e}")
@@ -175,7 +177,7 @@ def post_summary_comment(
 
 
 def sync_comments(
-    client: GitHubClient,
+    provider: "GitProvider",
     pr_number: int,
     summary: str,
     new_comments: list[ReviewComment],
@@ -187,7 +189,7 @@ def sync_comments(
     Edits existing comments at same location, creates new ones, deletes outdated.
 
     Args:
-        client: GitHub client
+        provider: Git provider (GitHub, GitLab, etc.)
         pr_number: Pull request number
         summary: Review summary text
         new_comments: List of review comments to post
@@ -196,12 +198,12 @@ def sync_comments(
 
     Returns (edited, created, deleted) counts.
     """
-    pr = client.get_pull_request(pr_number)
-    commit_sha = pr.head.sha
+    pr_info = provider.get_pull_request(pr_number)
+    commit_sha = pr_info.head_sha
 
-    existing = client.get_bot_comments(pr_number)
+    existing = provider.get_bot_review_comments(pr_number)
     # Index existing comments by (path, line), skip those with line=None (outdated)
-    existing_by_location: dict[tuple[str, int], PullRequestComment] = {
+    existing_by_location: dict[tuple[str, int], ReviewCommentInfo] = {
         (c.path, c.line): c for c in existing if c.line is not None
     }
     # Track outdated comments (line=None) separately to minimize them
@@ -219,15 +221,15 @@ def sync_comments(
             old = existing_by_location[location]
             if old.body != new_body:
                 try:
-                    old.edit(new_body)
-                    edited += 1
-                    logger.info(f"Edited comment on {new_comment.file}:{new_comment.line}")
+                    if provider.edit_review_comment(old.id, new_body):
+                        edited += 1
+                        logger.info(f"Edited comment on {new_comment.file}:{new_comment.line}")
                 except Exception as e:
                     logger.warning(f"Failed to edit comment: {e}")
         else:
             # Post new comment
             try:
-                client.post_review_comment(
+                provider.post_review_comment(
                     pr_number=pr_number,
                     body=new_body,
                     commit_sha=commit_sha,
@@ -243,7 +245,7 @@ def sync_comments(
     for location, old_comment in existing_by_location.items():
         if location not in new_by_location:
             try:
-                if client.delete_review_comment(old_comment):
+                if provider.delete_review_comment(old_comment.id):
                     minimized += 1
                     logger.info(f"Deleted comment on {old_comment.path}:{old_comment.line}")
             except Exception as e:
@@ -252,7 +254,7 @@ def sync_comments(
     # Delete outdated comments (line=None means code changed and comment is stale)
     for old_comment in outdated_comments:
         try:
-            if client.delete_review_comment(old_comment):
+            if provider.delete_review_comment(old_comment.id):
                 minimized += 1
                 logger.info(f"Deleted outdated comment on {old_comment.path}")
         except Exception as e:
@@ -260,6 +262,6 @@ def sync_comments(
 
     # Post summary comment
     total_posted = edited + created
-    post_summary_comment(client, pr_number, summary, total_posted, response)
+    post_summary_comment(provider, pr_number, summary, total_posted, response)
 
     return edited, created, minimized

@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from src.github.client import GitHubClient
+    from src.providers import GitProvider
 
 logger = logging.getLogger(__name__)
 
@@ -20,18 +20,18 @@ README_NAMES = [
 ]
 
 
-def fetch_readme(github_client: GitHubClient, ref: str | None = None) -> str | None:
+def fetch_readme(provider: GitProvider, ref: str | None = None) -> str | None:
     """Fetch README content from the repository.
 
     Args:
-        github_client: GitHub API client
+        provider: Git provider (GitHub, GitLab, etc.)
         ref: Git ref (branch, tag, commit SHA) to fetch from
 
     Returns:
         README content or None if not found
     """
     for readme_name in README_NAMES:
-        content = fetch_file_content(github_client, readme_name, ref)
+        content = fetch_file_content(provider, readme_name, ref)
         if content is not None:
             logger.debug(f"Found README: {readme_name}")
             return content
@@ -41,14 +41,14 @@ def fetch_readme(github_client: GitHubClient, ref: str | None = None) -> str | N
 
 
 def fetch_file_content(
-    github_client: GitHubClient,
+    provider: GitProvider,
     path: str,
     ref: str | None = None,
 ) -> str | None:
     """Fetch file content from the repository.
 
     Args:
-        github_client: GitHub API client
+        provider: Git provider (GitHub, GitLab, etc.)
         path: File path relative to repo root
         ref: Git ref (branch, tag, commit SHA) to fetch from
 
@@ -56,7 +56,7 @@ def fetch_file_content(
         File content or None if not found
     """
     try:
-        content = github_client.get_file_content(path, ref)
+        content = provider.get_file_content(path, ref)
         return content
     except Exception as e:
         logger.warning(f"Could not fetch {path} at ref {ref}: {type(e).__name__}: {e}")
@@ -64,7 +64,7 @@ def fetch_file_content(
 
 
 def fetch_files_with_fallback(
-    github_client: GitHubClient,
+    provider: GitProvider,
     base_path: str,
     extensions: list[str],
     ref: str | None = None,
@@ -72,7 +72,7 @@ def fetch_files_with_fallback(
     """Try fetching a file with different extensions.
 
     Args:
-        github_client: GitHub API client
+        provider: Git provider (GitHub, GitLab, etc.)
         base_path: Base file path without extension
         extensions: List of extensions to try (e.g., [".ts", ".tsx", ".js"])
         ref: Git ref to fetch from
@@ -82,7 +82,7 @@ def fetch_files_with_fallback(
     """
     for ext in extensions:
         path = f"{base_path}{ext}"
-        content = fetch_file_content(github_client, path, ref)
+        content = fetch_file_content(provider, path, ref)
         if content is not None:
             return content, path
 

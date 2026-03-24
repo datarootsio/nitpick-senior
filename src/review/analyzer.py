@@ -1,13 +1,16 @@
 """Core PR analysis logic."""
 
 import logging
+from typing import TYPE_CHECKING
 
 from src.context import ContextCollector, RepoContext
-from src.github.client import GitHubClient
 from src.github.diff import get_changed_line_numbers
 from src.llm.client import LLMClient
 from src.llm.response import ReviewComment, ReviewResponse
 from src.utils.tokens import estimate_tokens, truncate_to_tokens
+
+if TYPE_CHECKING:
+    from src.providers import GitProvider
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +40,7 @@ def filter_valid_comments(
 
 
 async def analyze_pr(
-    github_client: GitHubClient,
+    provider: "GitProvider",
     llm_client: LLMClient,
     pr_number: int,
     system_prompt: str,
@@ -47,7 +50,7 @@ async def analyze_pr(
     """Analyze a pull request and generate review feedback.
 
     Args:
-        github_client: GitHub API client
+        provider: Git provider (GitHub, GitLab, etc.)
         llm_client: LLM client for review generation
         pr_number: Pull request number to analyze
         system_prompt: Agent specification / system prompt
@@ -59,7 +62,7 @@ async def analyze_pr(
     """
     # Fetch the PR diff
     logger.info(f"Fetching diff for PR #{pr_number}")
-    diff_content = github_client.get_pr_diff(pr_number)
+    diff_content = provider.get_pr_diff(pr_number)
 
     if not diff_content.strip():
         logger.info("PR has no diff content")
@@ -72,9 +75,9 @@ async def analyze_pr(
     context: RepoContext | None = None
     if context_enabled:
         logger.info("Collecting repository context...")
-        changed_files = github_client.get_changed_files(pr_number)
+        changed_files = provider.get_changed_files(pr_number)
         collector = ContextCollector(
-            github_client=github_client,
+            provider=provider,
             max_context_tokens=context_max_tokens,
         )
         context = await collector.collect(pr_number, changed_files, diff_content)
