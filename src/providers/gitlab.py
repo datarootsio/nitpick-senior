@@ -5,6 +5,7 @@ import logging
 import gitlab
 from gitlab.v4.objects import Project, ProjectMergeRequest
 
+from .base import BaseProvider
 from .protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ logger = logging.getLogger(__name__)
 DEFAULT_GITLAB_URL = "https://gitlab.com"
 
 
-class GitLabProvider:
+class GitLabProvider(BaseProvider):
     """GitLab implementation of the GitProvider protocol."""
 
     def __init__(
@@ -30,6 +31,7 @@ class GitLabProvider:
             gitlab_url: GitLab instance URL
             bot_username: Bot username (defaults to token owner)
         """
+        super().__init__()
         self.token = token
         self.gitlab_url = gitlab_url
 
@@ -38,12 +40,12 @@ class GitLabProvider:
 
         self.project: Project = self.gl.projects.get(project_path)
         self.bot_username = bot_username or self.gl.user.username
-        self._pr_cache: dict[int, PullRequestInfo] = {}
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
         """Get merge request information."""
-        if pr_number in self._pr_cache:
-            return self._pr_cache[pr_number]
+        cached = self._get_cached_pr(pr_number)
+        if cached:
+            return cached
 
         mr: ProjectMergeRequest = self.project.mergerequests.get(pr_number)
 
@@ -54,7 +56,7 @@ class GitLabProvider:
             base_sha=mr.diff_refs["base_sha"],
             author=mr.author["username"],
         )
-        self._pr_cache[pr_number] = info
+        self._cache_pr(pr_number, info)
         return info
 
     def get_pr_diff(self, pr_number: int) -> str:
@@ -208,12 +210,14 @@ class GitLabProvider:
             logger.warning(f"Failed to edit comment {comment_id}: {e}")
             return False
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
         """Edit an existing issue comment (note)."""
         try:
-            # Need MR context
-            logger.warning("Edit issue comment requires MR context in GitLab")
-            return False
+            mr = self.project.mergerequests.get(pr_number)
+            note = mr.notes.get(int(comment_id))
+            note.body = body
+            note.save()
+            return True
         except Exception as e:
             logger.warning(f"Failed to edit issue comment {comment_id}: {e}")
             return False

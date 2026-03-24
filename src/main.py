@@ -6,16 +6,16 @@ import os
 import sys
 
 from src.config import Config
-from src.github.comments import (
+from src.llm.client import LLMClient
+from src.prompts.loader import load_agent_spec
+from src.providers import ProviderType, create_provider
+from src.review import (
+    analyze_pr,
     deduplicate_comments,
     filter_by_severity,
     post_summary_comment,
     sync_comments,
 )
-from src.llm.client import LLMClient
-from src.prompts.loader import load_agent_spec
-from src.providers import ProviderType, create_provider
-from src.review.analyzer import analyze_pr
 
 # Configure logging
 logging.basicConfig(

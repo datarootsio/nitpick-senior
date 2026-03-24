@@ -6,36 +6,45 @@ import requests
 from github.Repository import Repository
 
 from github import Github
+from src.providers.base import BaseProvider
 from src.providers.protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
 
-GRAPHQL_URL = "https://api.github.com/graphql"
+DEFAULT_API_URL = "https://api.github.com"
 BOT_USERNAME = "github-actions[bot]"
 
 
-class GitHubProvider:
+def _graphql_url(api_url: str) -> str:
+    """Get the GraphQL endpoint for a GitHub API URL."""
+    return f"{api_url}/graphql"
+
+
+class GitHubProvider(BaseProvider):
     """GitHub implementation of the GitProvider protocol."""
 
     bot_username: str = BOT_USERNAME
 
-    def __init__(self, token: str, repo_owner: str, repo_name: str):
+    def __init__(self, token: str, repo_owner: str, repo_name: str, base_url: str | None = None):
         """Initialize the GitHub provider.
 
         Args:
             token: GitHub token for authentication
             repo_owner: Repository owner (user or org)
             repo_name: Repository name
+            base_url: GitHub API base URL (for GitHub Enterprise)
         """
+        super().__init__()
         self.token = token
-        self.gh = Github(token)
+        self.api_url = base_url or DEFAULT_API_URL
+        self.gh = Github(token, base_url=self.api_url) if base_url else Github(token)
         self.repo: Repository = self.gh.get_repo(f"{repo_owner}/{repo_name}")
-        self._pr_cache: dict[int, PullRequestInfo] = {}
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
         """Get pull request information."""
-        if pr_number in self._pr_cache:
-            return self._pr_cache[pr_number]
+        cached = self._get_cached_pr(pr_number)
+        if cached:
+            return cached
 
         pr = self.repo.get_pull(pr_number)
         info = PullRequestInfo(
@@ -45,7 +54,7 @@ class GitHubProvider:
             base_sha=pr.base.sha,
             author=pr.user.login,
         )
-        self._pr_cache[pr_number] = info
+        self._cache_pr(pr_number, info)
         return info
 
     def get_pr_diff(self, pr_number: int) -> str:
@@ -141,32 +150,76 @@ class GitHubProvider:
         )
 
     def edit_review_comment(self, comment_id: str, body: str) -> bool:
-        """Edit an existing review comment."""
+        """Edit an existing review comment using direct REST API."""
+        url = f"{self.api_url}/repos/{self.repo.full_name}/pulls/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            comment = self.repo.get_pull_comment(int(comment_id))
-            comment.edit(body)
-            return True
-        except Exception as e:
-            logger.warning(f"Failed to edit comment {comment_id}: {e}")
+            response = requests.patch(
+                url,
+                json={"body": body},
+                headers=headers,
+                timeout=30,
+            )
+            if response.status_code == 200:
+                return True
+            logger.warning(
+                f"Failed to edit review comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to edit review comment {comment_id}: {e}")
             return False
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
-        """Edit an existing issue comment."""
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
+        """Edit an existing issue comment using direct REST API.
+
+        Uses PATCH /repos/{owner}/{repo}/issues/comments/{comment_id} directly
+        to avoid permission issues with the Issues API that PyGithub uses.
+        """
+        url = f"{self.api_url}/repos/{self.repo.full_name}/issues/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            comment = self.repo.get_issue_comment(int(comment_id))
-            comment.edit(body)
-            return True
-        except Exception as e:
+            response = requests.patch(
+                url,
+                json={"body": body},
+                headers=headers,
+                timeout=30,
+            )
+            if response.status_code == 200:
+                return True
+            logger.warning(
+                f"Failed to edit issue comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
             logger.warning(f"Failed to edit issue comment {comment_id}: {e}")
             return False
 
     def delete_review_comment(self, comment_id: str) -> bool:
-        """Delete a review comment."""
+        """Delete a review comment using direct REST API."""
+        url = f"{self.api_url}/repos/{self.repo.full_name}/pulls/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            comment = self.repo.get_pull_comment(int(comment_id))
-            comment.delete()
-            return True
-        except Exception as e:
+            response = requests.delete(url, headers=headers, timeout=30)
+            if response.status_code == 204:
+                return True
+            logger.warning(
+                f"Failed to delete comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
             logger.warning(f"Failed to delete comment {comment_id}: {e}")
             return False
 
@@ -187,7 +240,7 @@ class GitHubProvider:
         }
         try:
             response = requests.post(
-                GRAPHQL_URL,
+                _graphql_url(self.api_url),
                 json={"query": query, "variables": {"id": comment_id}},
                 headers=headers,
                 timeout=30,

@@ -1,6 +1,12 @@
 """Git provider abstraction layer."""
 
-from .factory import ProviderType, create_provider, detect_provider
+from .config import AzureDevOpsConfig, BitbucketConfig, GitHubConfig, GitLabConfig
+from .factory import (
+    ProviderType,
+    create_provider,
+    create_provider_from_config,
+    detect_provider,
+)
 from .protocol import (
     GitProvider,
     IssueCommentInfo,
@@ -15,5 +21,11 @@ __all__ = [
     "IssueCommentInfo",
     "ProviderType",
     "create_provider",
+    "create_provider_from_config",
     "detect_provider",
+    # Config objects
+    "GitHubConfig",
+    "AzureDevOpsConfig",
+    "GitLabConfig",
+    "BitbucketConfig",
 ]

@@ -12,12 +12,13 @@ from azure.devops.v7_1.git.models import (
 )
 from msrest.authentication import BasicAuthentication
 
+from .base import BaseProvider
 from .protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
 
 
-class AzureDevOpsProvider:
+class AzureDevOpsProvider(BaseProvider):
     """Azure DevOps implementation of the GitProvider protocol."""
 
     def __init__(
@@ -37,6 +38,7 @@ class AzureDevOpsProvider:
             repository: Repository name
             bot_username: Bot username (defaults to PAT owner)
         """
+        super().__init__()
         self.token = token
         self.org_url = org_url
         self.project = project
@@ -52,7 +54,6 @@ class AzureDevOpsProvider:
 
         # Bot username is the PAT owner identity
         self.bot_username = bot_username or self._get_current_user()
-        self._pr_cache: dict[int, PullRequestInfo] = {}
 
     def _get_current_user(self) -> str:
         """Get the current authenticated user."""
@@ -64,8 +65,9 @@ class AzureDevOpsProvider:
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
         """Get pull request information."""
-        if pr_number in self._pr_cache:
-            return self._pr_cache[pr_number]
+        cached = self._get_cached_pr(pr_number)
+        if cached:
+            return cached
 
         pr = self.git_client.get_pull_request(
             repository_id=self.repository_id,
@@ -80,7 +82,7 @@ class AzureDevOpsProvider:
             base_sha=pr.last_merge_target_commit.commit_id,
             author=pr.created_by.display_name,
         )
-        self._pr_cache[pr_number] = info
+        self._cache_pr(pr_number, info)
         return info
 
     def get_pr_diff(self, pr_number: int) -> str:
@@ -296,7 +298,7 @@ class AzureDevOpsProvider:
             logger.warning(f"Failed to edit comment {comment_id}: {e}")
             return False
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
         """Edit an existing issue comment."""
         try:
             logger.warning("Edit issue comment not fully implemented for Azure DevOps")
