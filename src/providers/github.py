@@ -6,6 +6,7 @@ import requests
 from github.Repository import Repository
 
 from github import Github
+from src.providers.base import BaseProvider
 from src.providers.protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
@@ -14,7 +15,7 @@ GRAPHQL_URL = "https://api.github.com/graphql"
 BOT_USERNAME = "github-actions[bot]"
 
 
-class GitHubProvider:
+class GitHubProvider(BaseProvider):
     """GitHub implementation of the GitProvider protocol."""
 
     bot_username: str = BOT_USERNAME
@@ -27,15 +28,16 @@ class GitHubProvider:
             repo_owner: Repository owner (user or org)
             repo_name: Repository name
         """
+        super().__init__()
         self.token = token
         self.gh = Github(token)
         self.repo: Repository = self.gh.get_repo(f"{repo_owner}/{repo_name}")
-        self._pr_cache: dict[int, PullRequestInfo] = {}
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
         """Get pull request information."""
-        if pr_number in self._pr_cache:
-            return self._pr_cache[pr_number]
+        cached = self._get_cached_pr(pr_number)
+        if cached:
+            return cached
 
         pr = self.repo.get_pull(pr_number)
         info = PullRequestInfo(
@@ -45,7 +47,7 @@ class GitHubProvider:
             base_sha=pr.base.sha,
             author=pr.user.login,
         )
-        self._pr_cache[pr_number] = info
+        self._cache_pr(pr_number, info)
         return info
 
     def get_pr_diff(self, pr_number: int) -> str:

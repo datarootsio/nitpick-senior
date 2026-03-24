@@ -5,6 +5,7 @@ import os
 from dataclasses import dataclass
 
 from src.providers import ProviderType, detect_provider
+from src.utils.env import parse_int_env, resolve_token
 
 
 @dataclass
@@ -64,15 +65,7 @@ class Config:
         provider = ProviderType(provider_str.lower()) if provider_str else detect_provider()
 
         # Get token (support multiple env var names for backward compat)
-        token = (
-            os.environ.get("INPUT_TOKEN")
-            or os.environ.get("INPUT_GITHUB_TOKEN")
-            or os.environ.get("GITHUB_TOKEN")
-            or os.environ.get("GITLAB_TOKEN")
-            or os.environ.get("AZURE_DEVOPS_TOKEN")
-            or os.environ.get("BITBUCKET_TOKEN")
-            or ""
-        )
+        token = resolve_token()
         if not token:
             raise ValueError(
                 "Authentication token is required. "
@@ -107,15 +100,8 @@ class Config:
 
         # Context settings
         context_enabled = os.environ.get("INPUT_CONTEXT_ENABLED", "true").lower() == "true"
-        try:
-            context_max_tokens = int(os.environ.get("INPUT_CONTEXT_MAX_TOKENS", "5000"))
-        except ValueError:
-            context_max_tokens = 5000
-
-        try:
-            max_comments = int(os.environ.get("INPUT_MAX_COMMENTS", "10"))
-        except ValueError:
-            max_comments = 10
+        context_max_tokens = parse_int_env("INPUT_CONTEXT_MAX_TOKENS", 5000)
+        max_comments = parse_int_env("INPUT_MAX_COMMENTS", 10)
 
         return cls(
             token=token,

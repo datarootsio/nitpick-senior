@@ -5,8 +5,14 @@ import os
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
+from src.utils.env import resolve_token
+
+from .config import AzureDevOpsConfig, BitbucketConfig, GitHubConfig, GitLabConfig
+
 if TYPE_CHECKING:
     from .protocol import GitProvider
+
+ProviderConfig = GitHubConfig | AzureDevOpsConfig | GitLabConfig | BitbucketConfig
 
 logger = logging.getLogger(__name__)
 
@@ -97,15 +103,7 @@ def create_provider(
 
     # Get token from env if not provided
     if not token:
-        token = (
-            os.environ.get("INPUT_TOKEN")
-            or os.environ.get("INPUT_GITHUB_TOKEN")
-            or os.environ.get("GITHUB_TOKEN")
-            or os.environ.get("GITLAB_TOKEN")
-            or os.environ.get("AZURE_DEVOPS_TOKEN")
-            or os.environ.get("BITBUCKET_TOKEN")
-            or ""
-        )
+        token = resolve_token()
 
     if not token:
         raise ValueError("Authentication token is required")
@@ -209,3 +207,69 @@ def create_provider(
 
     else:
         raise ValueError(f"Unknown provider type: {provider_type}")
+
+
+def create_provider_from_config(
+    config: ProviderConfig,
+    token: str | None = None,
+) -> "GitProvider":
+    """Create a Git provider instance from a config object.
+
+    This is a cleaner alternative to create_provider() with fewer parameters.
+
+    Args:
+        config: Provider-specific configuration object
+        token: Authentication token (resolved from env if not provided)
+
+    Returns:
+        Configured GitProvider instance
+
+    Example:
+        >>> config = GitHubConfig(repo_owner="owner", repo_name="repo")
+        >>> provider = create_provider_from_config(config, token="ghp_xxx")
+    """
+    if not token:
+        token = resolve_token()
+    if not token:
+        raise ValueError("Authentication token is required")
+
+    if isinstance(config, GitHubConfig):
+        from .github import GitHubProvider
+
+        return GitHubProvider(
+            token=token,
+            repo_owner=config.repo_owner,
+            repo_name=config.repo_name,
+        )
+
+    elif isinstance(config, AzureDevOpsConfig):
+        from .azure_devops import AzureDevOpsProvider
+
+        return AzureDevOpsProvider(
+            token=token,
+            org_url=config.org_url,
+            project=config.project,
+            repository=config.repository,
+        )
+
+    elif isinstance(config, GitLabConfig):
+        from .gitlab import GitLabProvider
+
+        return GitLabProvider(
+            token=token,
+            project_path=config.project,
+            gitlab_url=config.url,
+        )
+
+    elif isinstance(config, BitbucketConfig):
+        from .bitbucket import BitbucketProvider
+
+        return BitbucketProvider(
+            username=config.username,
+            app_password=token,
+            workspace=config.workspace,
+            repo_slug=config.repo_slug,
+        )
+
+    else:
+        raise ValueError(f"Unknown config type: {type(config)}")

@@ -4,12 +4,13 @@ import logging
 
 from atlassian.bitbucket import Cloud as BitbucketCloud
 
+from .base import BaseProvider
 from .protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
 
 
-class BitbucketProvider:
+class BitbucketProvider(BaseProvider):
     """Bitbucket Cloud implementation of the GitProvider protocol."""
 
     def __init__(
@@ -29,22 +30,23 @@ class BitbucketProvider:
             repo_slug: Repository slug
             bot_username: Bot username (defaults to auth username)
         """
+        super().__init__()
         self.username = username
         self.workspace = workspace
         self.repo_slug = repo_slug
 
         self.bitbucket = BitbucketCloud(username=username, password=app_password)
         self.bot_username = bot_username or username
-        self._pr_cache: dict[int, PullRequestInfo] = {}
+        # Cache repository object to avoid repeated API calls
+        self.repo = self.bitbucket.repositories.get(workspace, repo_slug)
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
         """Get pull request information."""
-        if pr_number in self._pr_cache:
-            return self._pr_cache[pr_number]
+        cached = self._get_cached_pr(pr_number)
+        if cached:
+            return cached
 
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         data = pr.data
 
@@ -55,14 +57,12 @@ class BitbucketProvider:
             base_sha=data["destination"]["commit"]["hash"],
             author=data["author"]["nickname"],
         )
-        self._pr_cache[pr_number] = info
+        self._cache_pr(pr_number, info)
         return info
 
     def get_pr_diff(self, pr_number: int) -> str:
         """Get the unified diff for a pull request."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         # Get diff
         diff_response = pr.diff()
@@ -72,9 +72,7 @@ class BitbucketProvider:
 
     def get_changed_files(self, pr_number: int) -> list[str]:
         """Get list of changed file paths in a PR."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         # Get diffstat for file list
         diffstat = pr.diffstat()
@@ -93,10 +91,9 @@ class BitbucketProvider:
     def get_file_content(self, path: str, ref: str | None = None) -> str | None:
         """Get the content of a file from the repository."""
         try:
-            repo = self.bitbucket.repositories.get(self.workspace, self.repo_slug)
             # Use the main branch if no ref specified
             ref = ref or "main"
-            content = repo.get(f"src/{ref}/{path}")
+            content = self.repo.get(f"src/{ref}/{path}")
             if isinstance(content, bytes):
                 return content.decode("utf-8")
             return str(content) if content else None
@@ -106,9 +103,7 @@ class BitbucketProvider:
 
     def get_bot_review_comments(self, pr_number: int) -> list[ReviewCommentInfo]:
         """Fetch all inline comments made by the bot."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         comments_data = pr.comments()
         comments = []
@@ -143,9 +138,7 @@ class BitbucketProvider:
 
     def get_bot_issue_comments(self, pr_number: int) -> list[IssueCommentInfo]:
         """Fetch all general comments made by the bot."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         comments_data = pr.comments()
         comments = []
@@ -173,9 +166,7 @@ class BitbucketProvider:
 
     def post_issue_comment(self, pr_number: int, body: str) -> None:
         """Post a comment on a pull request."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         pr.comment(body)
 
@@ -188,9 +179,7 @@ class BitbucketProvider:
         line: int,
     ) -> None:
         """Post an inline review comment on a specific line."""
-        pr = self.bitbucket.repositories.get(
-            self.workspace, self.repo_slug
-        ).pullrequests.get(pr_number)
+        pr = self.repo.pullrequests.get(pr_number)
 
         # Bitbucket inline comments
         pr.comment(
