@@ -85,7 +85,7 @@ class GitProvider(Protocol):
         """Edit an existing review comment."""
         ...
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
         """Edit an existing issue comment."""
         ...
 

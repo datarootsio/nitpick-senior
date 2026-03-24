@@ -74,7 +74,7 @@ def post_summary_comment(
         for comment in existing_comments:
             if comment.body.startswith(header):
                 if comment.body != body:
-                    provider.edit_issue_comment(comment.id, body)
+                    provider.edit_issue_comment(pr_number, comment.id, body)
                     logger.info("Updated existing summary comment")
                 else:
                     logger.info("Summary comment unchanged, skipping update")

@@ -152,10 +152,11 @@ class GitHubProvider(BaseProvider):
             logger.warning(f"Failed to edit comment {comment_id}: {e}")
             return False
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
         """Edit an existing issue comment."""
         try:
-            comment = self.repo.get_issue_comment(int(comment_id))
+            issue = self.repo.get_issue(pr_number)
+            comment = issue.get_comment(int(comment_id))
             comment.edit(body)
             return True
         except Exception as e:

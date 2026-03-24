@@ -25,17 +25,19 @@ def resolve_token() -> str:
     )
 
 
-def parse_int_env(key: str, default: int) -> int:
+def parse_int_env(key: str, default: int, min_value: int = 0) -> int:
     """Parse an integer from an environment variable with a default.
 
     Args:
         key: Environment variable name
         default: Default value if env var is missing or invalid
+        min_value: Minimum allowed value (default 0)
 
     Returns:
-        Parsed integer or default
+        Parsed integer (clamped to min_value) or default
     """
     try:
-        return int(os.environ.get(key, str(default)))
+        value = int(os.environ.get(key, str(default)))
+        return max(value, min_value)
     except ValueError:
         return default

@@ -210,12 +210,14 @@ class GitLabProvider(BaseProvider):
             logger.warning(f"Failed to edit comment {comment_id}: {e}")
             return False
 
-    def edit_issue_comment(self, comment_id: str, body: str) -> bool:
+    def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
         """Edit an existing issue comment (note)."""
         try:
-            # Need MR context
-            logger.warning("Edit issue comment requires MR context in GitLab")
-            return False
+            mr = self.project.mergerequests.get(pr_number)
+            note = mr.notes.get(int(comment_id))
+            note.body = body
+            note.save()
+            return True
         except Exception as e:
             logger.warning(f"Failed to edit issue comment {comment_id}: {e}")
             return False

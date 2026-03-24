@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Code Review Showdown - Dataroots</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="logo">dataroots</div>
+  <div class="slide-counter"><span id="current">1</span> / <span id="total">18</span></div>
+
+  <div class="slides-container">
+    <!-- Slide 1: Title -->
+    <div class="slide active" id="slide-1">
+      <h1>AI Code Review Showdown</h1>
+      <p class="subtitle">Paid Tools vs DIY: What We Learned Building Our Own</p>
+      <div style="margin-top: 3rem;">
+        <div class="comparison-grid" style="max-width: 900px;">
+          <div class="tool-card qodo">
+            <h3>Qodo</h3>
+            <div class="type">Paid SaaS</div>
+          </div>
+          <div class="tool-card greptile">
+            <h3>Greptile</h3>
+            <div class="type">Paid SaaS</div>
+          </div>
+          <div class="tool-card nitpick">
+            <h3>Nitpick Senior</h3>
+            <div class="type">Self-hosted</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: The Question -->
+    <div class="slide" id="slide-2">
+      <h2>The Big Question</h2>
+      <div class="glass-card" style="max-width: 900px; text-align: center;">
+        <p style="font-size: 1.75rem; color: var(--text-primary); margin-bottom: 1.5rem;">
+          Do you need to pay $30/user/month for AI code review?
+        </p>
+        <p style="font-size: 1.25rem;">
+          We built <strong style="color: var(--primary);">Nitpick Senior</strong>, a self-hosted alternative.
+          <br><br>
+          Along the way, we discovered something surprising about how AI reviews should work.
+        </p>
+      </div>
+      <div style="margin-top: 2rem; display: flex; gap: 2rem;">
+        <div class="glass-card" style="text-align: center; padding: 1.5rem 2rem;">
+          <div style="font-size: 2.5rem; font-weight: 700; color: #8b5cf6;">15</div>
+          <div style="color: var(--text-secondary);">PRs Compared</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1.5rem 2rem;">
+          <div style="font-size: 2.5rem; font-weight: 700; color: #f59e0b;">3</div>
+          <div style="color: var(--text-secondary);">Tools Tested</div>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1.5rem 2rem;">
+          <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);">1</div>
+          <div style="color: var(--text-secondary);">Key Insight</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: What Makes a Good Review -->
+    <div class="slide" id="slide-3">
+      <h2>What Makes a Good Code Review?</h2>
+      <div class="criteria-grid">
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Catches Real Issues</h3>
+            <p style="font-size: 0.95rem;">Bugs, security vulnerabilities, logic errors - not style preferences</p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Architectural Awareness</h3>
+            <p style="font-size: 0.95rem;">Understands patterns, best practices, and how changes fit the system</p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Explains the "Why"</h3>
+            <p style="font-size: 0.95rem;">Helps the author understand root causes, not just surface issues</p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2 5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2H4a2 2 0 01-2-2V5zm3.293 1.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414L7.586 10 5.293 7.707a1 1 0 010-1.414zM11 12a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Teaches, Not Just Critiques</h3>
+            <p style="font-size: 0.95rem;">Leaves the author better equipped for next time</p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Respects Developer Time</h3>
+            <p style="font-size: 0.95rem;">Focused feedback, no nitpicks that linters can catch</p>
+          </div>
+        </div>
+        <div class="criteria-item">
+          <div class="icon">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h3 style="margin-bottom: 0.25rem;">Maintains Quality Bar</h3>
+            <p style="font-size: 0.95rem;">Ensures code meets team standards before merge</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Meet the Contestants -->
+    <div class="slide" id="slide-4">
+      <h2>Meet the Contestants</h2>
+      <div class="comparison-grid">
+        <div class="tool-card qodo">
+          <h3>Qodo</h3>
+          <div class="type">Paid SaaS</div>
+          <div class="price">$30<span>/user/mo</span></div>
+          <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Free tier: 30 PRs/month</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Architecture diagrams</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Security analysis</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary);">Code fix suggestions</li>
+          </ul>
+        </div>
+        <div class="tool-card greptile">
+          <h3>Greptile</h3>
+          <div class="type">Paid SaaS</div>
+          <div class="price">$30<span>/seat/mo</span></div>
+          <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">50 reviews included</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">$1/additional review</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Codebase context</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary);">Open source: Free</li>
+          </ul>
+        </div>
+        <div class="tool-card nitpick">
+          <h3>Nitpick Senior</h3>
+          <div class="type">Self-hosted</div>
+          <div class="price" style="color: var(--primary);">~$0.05<span>/review</span></div>
+          <ul style="text-align: left; list-style: none; padding: 0; margin-top: 1.5rem;">
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Any LLM provider</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Customizable prompts</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary); border-bottom: 1px solid var(--glass-border);">Repository context</li>
+            <li style="padding: 0.5rem 0; color: var(--text-secondary);">Open source</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: PR Examples -->
+    <div class="slide" id="slide-5">
+      <h2><a href="https://github.com/datarootsio/agentic-bi-demo/pull/13" target="_blank" style="color: inherit; text-decoration: none;">PR #13: Multi-Agent BI Pipeline</a></h2>
+      <p style="margin-bottom: 1.5rem;">~2768 lines, 20 files - Major security-critical change (both tools reviewed)</p>
+      <div class="pr-review">
+        <div class="review-panel">
+          <h4>
+            <span style="color: #8b5cf6;">Qodo</span>
+            <span class="badge security">6 Issues</span>
+          </h4>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904074355" target="_blank" class="issue-link">
+              <h5>LLM code execution via exec()</h5>
+              <span class="badge security">CRITICAL</span>
+              <p>Executes LLM-supplied python_code with full __builtins__</p>
+            </a>
+          </div>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904074360" target="_blank" class="issue-link">
+              <h5>PR workflow exposes secrets</h5>
+              <span class="badge security">HIGH</span>
+              <p>Deploy triggers on pull_request, exposes ACR credentials</p>
+            </a>
+          </div>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904074367" target="_blank" class="issue-link">
+              <h5>Arbitrary file read</h5>
+              <span class="badge security">HIGH</span>
+              <p>Tampered state can trigger pd.read_csv() on local files</p>
+            </a>
+          </div>
+        </div>
+        <div class="review-panel">
+          <h4>
+            <span style="color: #f59e0b;">Greptile</span>
+            <span class="badge security">12+ Issues</span>
+          </h4>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904074787" target="_blank" class="issue-link">
+              <h5>Import blocklist bypass</h5>
+              <span class="badge security">CRITICAL</span>
+              <p><code>from os import system</code> not blocked by regex</p>
+            </a>
+          </div>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904124415" target="_blank" class="issue-link">
+              <h5>__builtins__ dict bypass</h5>
+              <span class="badge security">CRITICAL</span>
+              <p><code>__builtins__['__import__']('os')</code> evades all checks</p>
+            </a>
+          </div>
+          <div class="issue-item">
+            <a href="https://github.com/datarootsio/agentic-bi-demo/pull/13#discussion_r2904075218" target="_blank" class="issue-link">
+              <h5>Real infra IDs in tfvars</h5>
+              <span class="badge security">HIGH</span>
+              <p>Azure subscription, Databricks URLs committed</p>
+            </a>
+          </div>
+        </div>
+      </div>
+      <div class="glass-card" style="margin-top: 1rem; padding: 0.75rem; text-align: center;">
+        <strong>Key difference:</strong> Greptile found bypass patterns Qodo missed (import forms, builtins access)
+      </div>
+    </div>
+
+    <!-- Slide 6: Qodo Deep Dive -->
+    <div class="slide" id="slide-6">
+      <h2 style="color: #8b5cf6;">Qodo: How It Presents Issues</h2>
+      <div style="display: flex; gap: 1.5rem; max-width: 1100px;">
+        <div class="glass-card" style="flex: 1.2;">
+          <h4 style="margin-bottom: 1rem;">Example Comment Structure</h4>
+          <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; font-size: 0.8rem; line-height: 1.5;">
+            <div style="color: #f59e0b; margin-bottom: 0.5rem;">🔴 Action required</div>
+            <div style="margin-bottom: 0.5rem;"><strong>1. LLM code execution</strong> <code>🐞 Bug</code> <code>⛨ Security</code></div>
+            <div style="color: var(--text-secondary); margin-bottom: 1rem; padding: 0.5rem; background: rgba(0,0,0,0.3); border-radius: 4px;">
+              The UI executes LLM-supplied <em>python_code</em> via <em>exec()</em> with full <em>__builtins__</em>...
+            </div>
+            <details style="color: var(--text-secondary);">
+              <summary style="cursor: pointer; color: var(--primary);"><strong>▶ Agent Prompt</strong></summary>
+              <div style="padding: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem;">
+                <div><strong>Issue description:</strong> The chat UI executes...</div>
+                <div><strong>Fix Focus Areas:</strong> views/chat.py[97-125]</div>
+                <div><strong>Implementation direction:</strong> Replace python_code with declarative chart spec...</div>
+              </div>
+            </details>
+          </div>
+        </div>
+        <div style="flex: 1;">
+          <div class="glass-card" style="border-left: 4px solid #22c55e; margin-bottom: 1rem;">
+            <h5 style="color: #22c55e; margin-bottom: 0.5rem;">Strengths</h5>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+              <li>Clear visual hierarchy with badges</li>
+              <li>Numbered issues for easy reference</li>
+              <li><strong>Agent Prompts</strong> - copy to AI for fix</li>
+              <li>Specific file:line references</li>
+              <li>Implementation direction included</li>
+            </ul>
+          </div>
+          <div class="glass-card" style="border-left: 4px solid #ef4444;">
+            <h5 style="color: #ef4444; margin-bottom: 0.5rem;">Weaknesses</h5>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+              <li>Provides solutions → whack-a-mole risk</li>
+              <li>Missed bypass patterns (from X import Y)</li>
+              <li>Brief description, less technical depth</li>
+              <li>Doesn't show exploit examples</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 7: Greptile Deep Dive -->
+    <div class="slide" id="slide-7">
+      <h2 style="color: #f59e0b;">Greptile: How It Presents Issues</h2>
+      <div style="display: flex; gap: 1.5rem; max-width: 1100px;">
+        <div class="glass-card" style="flex: 1.2;">
+          <h4 style="margin-bottom: 1rem;">Example Comment Structure</h4>
+          <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; font-size: 0.8rem; line-height: 1.5;">
+            <div style="margin-bottom: 0.5rem;"><strong>`from X import Y` form bypasses all import blocklist patterns</strong></div>
+            <div style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+              Every forbidden pattern uses <code>import\s+&lt;module&gt;</code> form. The equally dangerous <code>from X import Y</code> is not covered:
+            </div>
+            <div style="background: rgba(0,0,0,0.3); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.75rem; margin-bottom: 0.75rem;">
+              <span style="color: #ef4444;">from os import system</span>  # not blocked<br>
+              <span style="color: #ef4444;">from subprocess import Popen</span>  # not blocked
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.75rem;">
+              A prompt-injection via malicious row data could bypass the sanitiser...
+            </div>
+            <div style="background: rgba(34, 197, 94, 0.1); padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; font-family: monospace; font-size: 0.7rem;">
+              <span style="color: #22c55e;">// Suggested fix with code</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex: 1;">
+          <div class="glass-card" style="border-left: 4px solid #22c55e; margin-bottom: 1rem;">
+            <h5 style="color: #22c55e; margin-bottom: 0.5rem;">Strengths</h5>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+              <li><strong>Deep technical analysis</strong></li>
+              <li>Shows actual exploit code</li>
+              <li>Found bypass patterns others missed</li>
+              <li>Explains attack vectors clearly</li>
+              <li>Provides working code fixes</li>
+            </ul>
+          </div>
+          <div class="glass-card" style="border-left: 4px solid #ef4444;">
+            <h5 style="color: #ef4444; margin-bottom: 0.5rem;">Weaknesses</h5>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary);">
+              <li>Also provides solutions → same risk</li>
+              <li>Long comments, harder to scan</li>
+              <li>No clear severity badges</li>
+              <li>Inconsistent coverage across PRs</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 8: The Discovery -->
+    <div class="slide" id="slide-8">
+      <h2>What We Discovered Building Nitpick Senior</h2>
+      <div class="glass-card" style="max-width: 900px; text-align: center;">
+        <p style="font-size: 1.5rem; color: var(--text-primary); margin-bottom: 1rem;">
+          The biggest problem isn't <em>finding</em> bugs...
+        </p>
+        <p style="font-size: 2rem; color: var(--primary); font-weight: 700;">
+          It's how reviewers communicate them.
+        </p>
+      </div>
+      <div style="margin-top: 2rem; display: flex; gap: 2rem; max-width: 900px;">
+        <div class="glass-card" style="flex: 1; border-left: 4px solid #ef4444;">
+          <h4 style="color: #ef4444; margin-bottom: 1rem;">The Problem</h4>
+          <p>AI reviewers provide code suggestions</p>
+          <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
+            "Use <code>pr.get_files()</code> instead of <code>repo.compare()</code>"
+          </p>
+        </div>
+        <div class="glass-card" style="flex: 1; border-left: 4px solid #22c55e;">
+          <h4 style="color: #22c55e; margin-bottom: 1rem;">What Happens</h4>
+          <p>Developer applies fix mechanically</p>
+          <p style="margin-top: 0.5rem; color: var(--text-muted); font-size: 0.9rem;">
+            Without understanding the root cause
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 9: The Whack-a-Mole Problem -->
+    <div class="slide" id="slide-9">
+      <h2>The Whack-a-Mole Problem</h2>
+      <div class="glass-card" style="max-width: 1000px;">
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start;">
+          <div style="text-align: center;">
+            <div style="font-size: 4rem;">🔨</div>
+            <p style="color: var(--text-secondary); margin-top: 1rem;">Same bug, different line<br>3 review cycles</p>
+          </div>
+          <div>
+            <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid #ef4444;">
+              <strong>Review 1:</strong> "get_changed_files() won't work for forks"<br>
+              <span style="color: var(--text-muted);">Fix: Changed to pr.get_files()</span>
+            </div>
+            <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid #ef4444;">
+              <strong>Review 2:</strong> "get_file_content() won't work for forks"<br>
+              <span style="color: var(--text-muted);">Fix: Same issue, different method</span>
+            </div>
+            <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; border-left: 3px solid #ef4444;">
+              <strong>Review 3:</strong> "Context collector won't work for forks"<br>
+              <span style="color: var(--text-muted);">Fix: Still the same root cause!</span>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top: 2rem; padding: 1rem; background: rgba(239, 68, 68, 0.1); border-radius: 8px;">
+          <strong style="color: #ef4444;">Root Cause:</strong> <code>self.repo</code> always points to base repository, so ALL methods using it fail for fork content.
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 10: Suggestion vs Problem -->
+    <div class="slide" id="slide-10">
+      <h2>Suggestion-Driven vs Problem-Driven</h2>
+      <div style="display: flex; gap: 2rem; max-width: 1100px;">
+        <div class="glass-card" style="flex: 1; border-top: 4px solid #ef4444;">
+          <h4 style="color: #ef4444; margin-bottom: 1rem;">Suggestion-Driven (Bad)</h4>
+          <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem;">
+            "This will fail for forks.<br><br>
+            <span style="color: #22c55e;">Use pr.get_files() instead of repo.compare()</span>"
+          </div>
+          <ul style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+            <li>Developer copy-pastes fix</li>
+            <li>Doesn't understand WHY</li>
+            <li>Misses other affected methods</li>
+            <li>Multiple review cycles</li>
+          </ul>
+        </div>
+        <div class="glass-card" style="flex: 1; border-top: 4px solid #22c55e;">
+          <h4 style="color: #22c55e; margin-bottom: 1rem;">Problem-Driven (Good)</h4>
+          <div style="background: var(--bg-dark); padding: 1rem; border-radius: 8px; font-family: monospace; font-size: 0.85rem;">
+            "This will fail for forks.<br><br>
+            <span style="color: #f59e0b;">Why: self.repo always points to the base repository. Any method using it cannot access fork content.</span>"
+          </div>
+          <ul style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.9rem;">
+            <li>Developer understands root cause</li>
+            <li>Asks: "Where else is this pattern?"</li>
+            <li>Fixes ALL affected methods</li>
+            <li>Single review cycle</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 11: Context Enrichment -->
+    <div class="slide" id="slide-11">
+      <h2>Adding Repository Context</h2>
+      <p style="margin-bottom: 1.5rem;">Paid tools include codebase context. We built it too.</p>
+      <div class="glass-card" style="max-width: 900px;">
+        <h4 style="margin-bottom: 1rem;">What We Added</h4>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem;">
+          <div style="text-align: center; padding: 1rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📖</div>
+            <strong>README</strong>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Project conventions</p>
+          </div>
+          <div style="text-align: center; padding: 1rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">📦</div>
+            <strong>Imported Files</strong>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Dependencies of changed code</p>
+          </div>
+          <div style="text-align: center; padding: 1rem;">
+            <div style="font-size: 2rem; margin-bottom: 0.5rem;">🔒</div>
+            <strong>Security Filter</strong>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">Excludes .env, keys, secrets</p>
+          </div>
+        </div>
+        <div style="margin-top: 1.5rem; padding: 1rem; background: var(--bg-dark); border-radius: 8px;">
+          <strong>Token Budget:</strong>
+          <div style="display: flex; gap: 2rem; margin-top: 0.5rem;">
+            <span>Total: 30,000</span>
+            <span>Context: 5,000</span>
+            <span>Diff: 25,000</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 12: False Positives -->
+    <div class="slide" id="slide-12">
+      <h2>AI Reviewers Can Be Confidently Wrong</h2>
+      <div class="glass-card" style="max-width: 900px;">
+        <div style="background: var(--bg-dark); padding: 1.5rem; border-radius: 8px; border-left: 4px solid #ef4444;">
+          <h4 style="color: #ef4444; margin-bottom: 1rem;">Flagged 3 Times as ERROR:</h4>
+          <p style="font-family: monospace; font-size: 0.9rem;">
+            "truncate_diff(diff_content, max_tokens) passes two arguments,<br>
+            but the function only accepts one. This will raise TypeError."
+          </p>
+        </div>
+        <div style="margin-top: 1.5rem; background: rgba(34, 197, 94, 0.1); padding: 1.5rem; border-radius: 8px; border-left: 4px solid #22c55e;">
+          <h4 style="color: #22c55e; margin-bottom: 1rem;">Reality:</h4>
+          <p style="font-family: monospace; font-size: 0.9rem;">
+            def truncate_diff(diff_content: str, <strong style="color: #22c55e;">max_tokens: int = MAX_DIFF_TOKENS</strong>) -> str:
+          </p>
+          <p style="margin-top: 1rem; color: var(--text-secondary);">
+            The function DOES accept two arguments. The LLM assumed based on common patterns without verifying.
+          </p>
+        </div>
+      </div>
+      <div class="glass-card" style="margin-top: 1.5rem; max-width: 900px; text-align: center;">
+        <p style="font-size: 1.1rem;">
+          <strong>Lesson:</strong> AI reviewers make assumptions. They don't actually read and verify the full codebase.
+        </p>
+      </div>
+    </div>
+
+    <!-- Slide 13: Cost Analysis -->
+    <div class="slide" id="slide-13">
+      <h2>Cost Comparison</h2>
+      <div class="glass-card cost-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th style="color: #8b5cf6;">Qodo</th>
+              <th style="color: #f59e0b;">Greptile</th>
+              <th style="color: var(--primary);">Nitpick Senior</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>10 devs, 50 PRs/month</td>
+              <td>$300/mo</td>
+              <td>$300/mo</td>
+              <td class="cost-highlight">~$5/mo</td>
+            </tr>
+            <tr>
+              <td>50 devs, 200 PRs/month</td>
+              <td>$1,500/mo</td>
+              <td>$1,500/mo + overage</td>
+              <td class="cost-highlight">~$20/mo</td>
+            </tr>
+            <tr>
+              <td>100 devs, 500 PRs/month</td>
+              <td>$3,000/mo</td>
+              <td>$3,000/mo + overage</td>
+              <td class="cost-highlight">~$50/mo</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 2rem; display: flex; gap: 2rem;">
+        <div class="glass-card" style="flex: 1; text-align: center;">
+          <div style="font-size: 3rem; font-weight: 800; color: var(--primary);">98%</div>
+          <div style="color: var(--text-secondary);">Cost Savings</div>
+        </div>
+        <div class="glass-card" style="flex: 1; text-align: center;">
+          <div style="font-size: 3rem; font-weight: 800; color: var(--primary);">$0.05</div>
+          <div style="color: var(--text-secondary);">Per Review</div>
+        </div>
+        <div class="glass-card" style="flex: 1; text-align: center;">
+          <div style="font-size: 3rem; font-weight: 800; color: #22c55e;">Free</div>
+          <div style="color: var(--text-secondary);">Open Source</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 14: Tool Comparison -->
+    <div class="slide" id="slide-14">
+      <h2>Tool Comparison Summary</h2>
+      <div class="findings-grid">
+        <div class="finding-card" style="border-top: 4px solid #8b5cf6;">
+          <h4 style="color: #8b5cf6;">Qodo</h4>
+          <ul>
+            <li class="strength">Very comprehensive reviews</li>
+            <li class="strength">Architecture diagrams</li>
+            <li class="strength">100% PR coverage</li>
+            <li class="strength">Free tier: 30 PRs/month</li>
+            <li class="weakness">$30/user/month</li>
+            <li class="weakness">Provides code suggestions (whack-a-mole risk)</li>
+          </ul>
+        </div>
+        <div class="finding-card" style="border-top: 4px solid #f59e0b;">
+          <h4 style="color: #f59e0b;">Greptile</h4>
+          <ul>
+            <li class="strength">Deep security analysis</li>
+            <li class="strength">Codebase context</li>
+            <li class="strength">Free for open source</li>
+            <li class="weakness">Inconsistent coverage</li>
+            <li class="weakness">$30/seat + overages</li>
+            <li class="weakness">Also suggests fixes</li>
+          </ul>
+        </div>
+        <div class="finding-card" style="border-top: 4px solid var(--primary);">
+          <h4 style="color: var(--primary);">Nitpick Senior</h4>
+          <ul>
+            <li class="strength">~$0.05/review</li>
+            <li class="strength">Any LLM provider</li>
+            <li class="strength">Fully customizable</li>
+            <li class="strength">Problem-focused (no suggestions)</li>
+            <li class="weakness">Requires setup</li>
+            <li class="weakness">You maintain it</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 15: Key Learnings -->
+    <div class="slide" id="slide-15">
+      <h2>Key Learnings</h2>
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; max-width: 1000px;">
+        <div class="glass-card">
+          <h4 style="color: var(--primary); margin-bottom: 1rem;">1. Don't Suggest Fixes</h4>
+          <p>AI reviewers should identify WHAT and WHY, not HOW. Code suggestions create feedback loops.</p>
+        </div>
+        <div class="glass-card">
+          <h4 style="color: var(--primary); margin-bottom: 1rem;">2. Root Cause Matters</h4>
+          <p>Explaining the underlying issue leads to complete fixes. Surface-level feedback leads to whack-a-mole.</p>
+        </div>
+        <div class="glass-card">
+          <h4 style="color: var(--primary); margin-bottom: 1rem;">3. Context Has Limits</h4>
+          <p>Repository context helps, but AI still makes assumptions. It doesn't truly "understand" your codebase.</p>
+        </div>
+        <div class="glass-card">
+          <h4 style="color: var(--primary); margin-bottom: 1rem;">4. DIY is Viable</h4>
+          <p>You can build 80% of paid tool functionality at 3% of the cost. The gap is shrinking.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 16: Architecture -->
+    <div class="slide" id="slide-16">
+      <h2>Nitpick Senior Architecture</h2>
+      <div class="glass-card" style="max-width: 900px;">
+        <pre style="font-size: 0.8rem; line-height: 1.6; color: var(--text-secondary);">
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   GitHub PR     │────▶│  Context         │────▶│   LLM Review    │
+│   Webhook       │     │  Collector       │     │   (Any Provider)│
+└─────────────────┘     └──────────────────┘     └─────────────────┘
+                               │                         │
+                        ┌──────┴──────┐                  │
+                        ▼             ▼                  ▼
+                   ┌────────┐   ┌──────────┐    ┌──────────────┐
+                   │ README │   │ Imported │    │  Structured  │
+                   │        │   │ Files    │    │  Response    │
+                   └────────┘   └──────────┘    └──────────────┘
+                                                       │
+                                                       ▼
+                                              ┌──────────────────┐
+                                              │  GitHub Comments │
+                                              │  (with "Why")    │
+                                              └──────────────────┘
+        </pre>
+      </div>
+      <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+        <div class="glass-card" style="text-align: center; padding: 1rem;">
+          <strong>Pydantic AI</strong>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Structured output</p>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1rem;">
+          <strong>OpenRouter</strong>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Any LLM</p>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1rem;">
+          <strong>GitHub Action</strong>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Easy deploy</p>
+        </div>
+        <div class="glass-card" style="text-align: center; padding: 1rem;">
+          <strong>Docker</strong>
+          <p style="font-size: 0.8rem; color: var(--text-secondary);">Reproducible</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 17: When to Use What -->
+    <div class="slide" id="slide-17">
+      <h2>When to Use What</h2>
+      <div class="decision-grid">
+        <div class="decision-card paid">
+          <h4>Use Paid Tools When...</h4>
+          <ul>
+            <li>Enterprise compliance required</li>
+            <li>Zero maintenance is a priority</li>
+            <li>Budget isn't a constraint</li>
+            <li>Need vendor support</li>
+          </ul>
+        </div>
+        <div class="decision-card diy">
+          <h4>Use Nitpick Senior When...</h4>
+          <ul>
+            <li>Cost-sensitive teams</li>
+            <li>Want control over behavior</li>
+            <li>Privacy concerns (self-hosted)</li>
+            <li>Want problem-focused reviews</li>
+          </ul>
+        </div>
+      </div>
+      <div class="glass-card" style="margin-top: 2rem; max-width: 800px; text-align: center;">
+        <h3 style="margin-bottom: 1rem;">Consider Hybrid</h3>
+        <p style="font-size: 1.1rem;">
+          Use free tiers of paid tools + Nitpick Senior for overflow.<br>
+          Best of both worlds.
+        </p>
+      </div>
+    </div>
+
+    <!-- Slide 18: Conclusion -->
+    <div class="slide" id="slide-18">
+      <h2>Takeaways</h2>
+      <div class="glass-card" style="max-width: 800px; text-align: center;">
+        <div style="font-size: 1.3rem; line-height: 2;">
+          <p><strong style="color: var(--primary);">1.</strong> AI code review is accessible to everyone</p>
+          <p><strong style="color: var(--primary);">2.</strong> How feedback is given matters more than what's found</p>
+          <p><strong style="color: var(--primary);">3.</strong> Root cause > Code suggestion</p>
+          <p><strong style="color: var(--primary);">4.</strong> 98% cost savings are real and achievable</p>
+        </div>
+      </div>
+      <div style="margin-top: 3rem; text-align: center;">
+        <p style="font-size: 1.5rem; color: var(--text-secondary);">
+          <a href="https://github.com/datarootsio/github-reviewer" style="color: var(--primary);">
+            github.com/datarootsio/github-reviewer
+          </a>
+        </p>
+        <p style="margin-top: 1rem; color: var(--text-muted);">
+          Questions?
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="nav-controls">
+    <button class="nav-btn" id="prev" onclick="changeSlide(-1)">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+    <button class="nav-btn" id="next" onclick="changeSlide(1)">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/></svg>
+    </button>
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 18;
+
+    function updateSlide() {
+      document.querySelectorAll('.slide').forEach((slide, index) => {
+        slide.classList.toggle('active', index + 1 === currentSlide);
+      });
+      document.getElementById('current').textContent = currentSlide;
+      document.getElementById('total').textContent = totalSlides;
+      document.getElementById('prev').disabled = currentSlide === 1;
+      document.getElementById('next').disabled = currentSlide === totalSlides;
+    }
+
+    function changeSlide(delta) {
+      currentSlide = Math.max(1, Math.min(totalSlides, currentSlide + delta));
+      updateSlide();
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') changeSlide(1);
+      if (e.key === 'ArrowLeft') changeSlide(-1);
+      if (e.key === 'Home') { currentSlide = 1; updateSlide(); }
+      if (e.key === 'End') { currentSlide = totalSlides; updateSlide(); }
+    });
+
+    // Touch support
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => touchStartX = e.touches[0].clientX);
+    document.addEventListener('touchend', (e) => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) changeSlide(diff > 0 ? 1 : -1);
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>
