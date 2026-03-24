@@ -60,6 +60,39 @@ The same Docker image works for all providers:
 docker pull ghcr.io/datarootsio/nitpick-senior:latest
 ```
 
+## Known Limitations
+
+### Comment Management
+
+Re-running reviews on the same PR works best on GitHub. Other providers have limitations:
+
+| Capability | GitHub | GitLab | Azure DevOps | Bitbucket |
+|------------|--------|--------|--------------|-----------|
+| Edit existing comments | Yes | No | No | No |
+| Delete outdated comments | Yes | No | Partial* | No |
+
+*Azure DevOps can close/resolve threads but not delete them.
+
+**Impact:** On GitLab, Azure DevOps, and Bitbucket, re-running reviews may create duplicate comments instead of updating existing ones. First-time reviews work correctly on all providers.
+
+### Provider-Specific Notes
+
+**GitHub**
+- Full feature support including comment minimization
+- Works with GitHub Enterprise (set custom API URL)
+
+**GitLab**
+- Inline comments use diff notes API
+- Self-hosted instances supported
+
+**Azure DevOps**
+- Comments are posted as PR threads
+- Diff computed by fetching file content at base/head commits
+
+**Bitbucket**
+- Uses Bitbucket Cloud API (atlassian-python-api)
+- Workspace and repo slug required
+
 ## Need Help?
 
 - Check the provider-specific documentation linked above
