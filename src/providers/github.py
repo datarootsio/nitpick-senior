@@ -11,8 +11,13 @@ from src.providers.protocol import IssueCommentInfo, PullRequestInfo, ReviewComm
 
 logger = logging.getLogger(__name__)
 
-GRAPHQL_URL = "https://api.github.com/graphql"
+DEFAULT_API_URL = "https://api.github.com"
 BOT_USERNAME = "github-actions[bot]"
+
+
+def _graphql_url(api_url: str) -> str:
+    """Get the GraphQL endpoint for a GitHub API URL."""
+    return f"{api_url}/graphql"
 
 
 class GitHubProvider(BaseProvider):
@@ -20,17 +25,19 @@ class GitHubProvider(BaseProvider):
 
     bot_username: str = BOT_USERNAME
 
-    def __init__(self, token: str, repo_owner: str, repo_name: str):
+    def __init__(self, token: str, repo_owner: str, repo_name: str, base_url: str | None = None):
         """Initialize the GitHub provider.
 
         Args:
             token: GitHub token for authentication
             repo_owner: Repository owner (user or org)
             repo_name: Repository name
+            base_url: GitHub API base URL (for GitHub Enterprise)
         """
         super().__init__()
         self.token = token
-        self.gh = Github(token)
+        self.api_url = base_url or DEFAULT_API_URL
+        self.gh = Github(token, base_url=self.api_url) if base_url else Github(token)
         self.repo: Repository = self.gh.get_repo(f"{repo_owner}/{repo_name}")
 
     def get_pull_request(self, pr_number: int) -> PullRequestInfo:
@@ -143,13 +150,28 @@ class GitHubProvider(BaseProvider):
         )
 
     def edit_review_comment(self, comment_id: str, body: str) -> bool:
-        """Edit an existing review comment."""
+        """Edit an existing review comment using direct REST API."""
+        url = f"{self.api_url}/repos/{self.repo.full_name}/pulls/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            comment = self.repo.get_pull_comment(int(comment_id))
-            comment.edit(body)
-            return True
-        except Exception as e:
-            logger.warning(f"Failed to edit comment {comment_id}: {e}")
+            response = requests.patch(
+                url,
+                json={"body": body},
+                headers=headers,
+                timeout=30,
+            )
+            if response.status_code == 200:
+                return True
+            logger.warning(
+                f"Failed to edit review comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
+            logger.warning(f"Failed to edit review comment {comment_id}: {e}")
             return False
 
     def edit_issue_comment(self, pr_number: int, comment_id: str, body: str) -> bool:
@@ -158,7 +180,7 @@ class GitHubProvider(BaseProvider):
         Uses PATCH /repos/{owner}/{repo}/issues/comments/{comment_id} directly
         to avoid permission issues with the Issues API that PyGithub uses.
         """
-        url = f"https://api.github.com/repos/{self.repo.full_name}/issues/comments/{comment_id}"
+        url = f"{self.api_url}/repos/{self.repo.full_name}/issues/comments/{comment_id}"
         headers = {
             "Authorization": f"Bearer {self.token}",
             "Accept": "application/vnd.github+json",
@@ -182,12 +204,22 @@ class GitHubProvider(BaseProvider):
             return False
 
     def delete_review_comment(self, comment_id: str) -> bool:
-        """Delete a review comment."""
+        """Delete a review comment using direct REST API."""
+        url = f"{self.api_url}/repos/{self.repo.full_name}/pulls/comments/{comment_id}"
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         try:
-            comment = self.repo.get_pull_comment(int(comment_id))
-            comment.delete()
-            return True
-        except Exception as e:
+            response = requests.delete(url, headers=headers, timeout=30)
+            if response.status_code == 204:
+                return True
+            logger.warning(
+                f"Failed to delete comment {comment_id}: {response.status_code}"
+            )
+            return False
+        except requests.exceptions.RequestException as e:
             logger.warning(f"Failed to delete comment {comment_id}: {e}")
             return False
 
@@ -208,7 +240,7 @@ class GitHubProvider(BaseProvider):
         }
         try:
             response = requests.post(
-                GRAPHQL_URL,
+                _graphql_url(self.api_url),
                 json={"query": query, "variables": {"id": comment_id}},
                 headers=headers,
                 timeout=30,
