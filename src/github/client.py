@@ -1,23 +1,27 @@
-"""GitHub API client wrapper."""
+"""GitHub API client wrapper - backward compatibility layer.
+
+This module provides backward compatibility with code that imports GitHubClient
+from src.github.client. New code should use src.providers.GitHubProvider instead.
+"""
 
 import logging
+import warnings
 
-import requests
-from github.IssueComment import IssueComment
-from github.PullRequest import PullRequest
-from github.PullRequestComment import PullRequestComment
-from github.Repository import Repository
-
-from github import Github
+from src.providers.github import GitHubProvider
+from src.providers.protocol import IssueCommentInfo, PullRequestInfo, ReviewCommentInfo
 
 logger = logging.getLogger(__name__)
 
-GRAPHQL_URL = "https://api.github.com/graphql"
+# Re-export constants for backward compatibility
 BOT_USERNAME = "github-actions[bot]"
+GRAPHQL_URL = "https://api.github.com/graphql"
 
 
-class GitHubClient:
-    """Wrapper around PyGithub for PR operations."""
+class GitHubClient(GitHubProvider):
+    """Backward compatible wrapper around GitHubProvider.
+
+    Deprecated: Use src.providers.GitHubProvider instead.
+    """
 
     def __init__(self, token: str, repo_owner: str, repo_name: str):
         """Initialize the GitHub client.
@@ -27,166 +31,29 @@ class GitHubClient:
             repo_owner: Repository owner (user or org)
             repo_name: Repository name
         """
-        self.token = token
-        self.gh = Github(token)
-        self.repo: Repository = self.gh.get_repo(f"{repo_owner}/{repo_name}")
+        warnings.warn(
+            "GitHubClient is deprecated. Use src.providers.GitHubProvider instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        super().__init__(token=token, repo_owner=repo_owner, repo_name=repo_name)
 
-    def get_pull_request(self, pr_number: int) -> PullRequest:
-        """Get a pull request by number."""
-        return self.repo.get_pull(pr_number)
+    # Backward compatible method names
 
-    def get_bot_comments(self, pr_number: int) -> list[PullRequestComment]:
-        """Fetch all review comments made by the bot."""
-        pr = self.get_pull_request(pr_number)
-        return [c for c in pr.get_review_comments() if c.user.login == BOT_USERNAME]
-
-    def get_pr_diff(self, pr_number: int) -> str:
-        """Get the unified diff for a pull request."""
-        pr = self.get_pull_request(pr_number)
-        # Get diff via the compare API
-        comparison = self.repo.compare(pr.base.sha, pr.head.sha)
-
-        # Build unified diff from files
-        diff_parts = []
-        for file in comparison.files:
-            if file.patch:
-                diff_parts.append(f"diff --git a/{file.filename} b/{file.filename}")
-                diff_parts.append(f"--- a/{file.filename}")
-                diff_parts.append(f"+++ b/{file.filename}")
-                diff_parts.append(file.patch)
-                diff_parts.append("")
-
-        return "\n".join(diff_parts)
-
-    def get_file_content(self, path: str, ref: str | None = None) -> str | None:
-        """Get the content of a file from the repository.
-
-        Args:
-            path: File path relative to repo root
-            ref: Git ref (branch, tag, commit SHA) to fetch from. Defaults to default branch.
-
-        Returns:
-            File content as string, or None if file not found
-        """
-        try:
-            if ref:
-                contents = self.repo.get_contents(path, ref=ref)
-            else:
-                contents = self.repo.get_contents(path)
-
-            # get_contents can return a list for directories
-            if isinstance(contents, list):
-                return None
-
-            return contents.decoded_content.decode("utf-8")
-        except Exception as e:
-            logger.warning(f"Failed to fetch file {path}: {e}")
-            return None
-
-    def get_changed_files(self, pr_number: int) -> list[str]:
-        """Get list of changed file paths in a PR.
-
-        Args:
-            pr_number: Pull request number
-
-        Returns:
-            List of file paths that were changed
-        """
-        pr = self.get_pull_request(pr_number)
-        # Use pr.get_files() instead of repo.compare() to support forked PRs
-        return [f.filename for f in pr.get_files()]
-
-    def get_bot_issue_comments(self, pr_number: int) -> list[IssueComment]:
-        """Fetch all issue comments made by the bot."""
-        pr = self.get_pull_request(pr_number)
-        return [c for c in pr.get_issue_comments() if c.user.login == BOT_USERNAME]
+    def get_bot_comments(self, pr_number: int) -> list[ReviewCommentInfo]:
+        """Backward compatible alias for get_bot_review_comments."""
+        return self.get_bot_review_comments(pr_number)
 
     def post_comment(self, pr_number: int, body: str) -> None:
-        """Post a comment on a pull request."""
-        pr = self.get_pull_request(pr_number)
-        pr.create_issue_comment(body)
+        """Backward compatible alias for post_issue_comment."""
+        self.post_issue_comment(pr_number, body)
 
-    def post_review_comment(
-        self,
-        pr_number: int,
-        body: str,
-        commit_sha: str,
-        path: str,
-        line: int,
-    ) -> None:
-        """Post an inline review comment on a specific line.
 
-        Args:
-            pr_number: Pull request number
-            body: Comment body
-            commit_sha: The commit SHA to comment on
-            path: File path relative to repo root
-            line: Line number in the file
-        """
-        pr = self.get_pull_request(pr_number)
-        pr.create_review_comment(
-            body=body,
-            commit=self.repo.get_commit(commit_sha),
-            path=path,
-            line=line,
-        )
-
-    def minimize_comment(self, node_id: str) -> bool:
-        """Minimize a comment using GitHub's GraphQL API.
-
-        Args:
-            node_id: The GraphQL node ID of the comment
-
-        Returns:
-            True if successful, False otherwise
-        """
-        query = """
-        mutation MinimizeComment($id: ID!) {
-            minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) {
-                minimizedComment {
-                    isMinimized
-                }
-            }
-        }
-        """
-        headers = {
-            "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json",
-        }
-        try:
-            response = requests.post(
-                GRAPHQL_URL,
-                json={"query": query, "variables": {"id": node_id}},
-                headers=headers,
-                timeout=30,
-            )
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"GraphQL request failed: {e}")
-            return False
-
-        if response.status_code != 200:
-            logger.warning(f"GraphQL request failed: {response.status_code}")
-            return False
-
-        data = response.json()
-        if "errors" in data:
-            logger.warning(f"GraphQL errors: {data['errors']}")
-            return False
-
-        return True
-
-    def delete_review_comment(self, comment: PullRequestComment) -> bool:
-        """Delete a review comment.
-
-        Args:
-            comment: The PullRequestComment object to delete
-
-        Returns:
-            True if successful, False otherwise
-        """
-        try:
-            comment.delete()
-            return True
-        except Exception as e:
-            logger.warning(f"Failed to delete comment {comment.id}: {e}")
-            return False
+__all__ = [
+    "GitHubClient",
+    "BOT_USERNAME",
+    "GRAPHQL_URL",
+    "PullRequestInfo",
+    "ReviewCommentInfo",
+    "IssueCommentInfo",
+]

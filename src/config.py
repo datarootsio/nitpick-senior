@@ -4,14 +4,24 @@ import contextlib
 import os
 from dataclasses import dataclass
 
+from src.providers import ProviderType, detect_provider
+
 
 @dataclass
 class Config:
     """Action configuration loaded from environment variables."""
 
-    github_token: str
+    # Authentication
+    token: str
+
+    # Provider settings
+    provider: ProviderType
+
+    # Model settings
     model: str
     agent_spec_path: str
+
+    # Review settings
     post_summary: bool
     post_inline_comments: bool
     max_comments: int
@@ -21,47 +31,75 @@ class Config:
     context_enabled: bool
     context_max_tokens: int
 
-    # GitHub context
+    # GitHub context (backward compatible)
     repo_owner: str
     repo_name: str
     pr_number: int
 
+    # Azure DevOps settings
+    azure_org_url: str | None
+    azure_project: str | None
+    azure_repository: str | None
+
+    # GitLab settings
+    gitlab_url: str | None
+    gitlab_project: str | None
+
+    # Bitbucket settings
+    bitbucket_workspace: str | None
+    bitbucket_repo_slug: str | None
+    bitbucket_username: str | None
+
+    # Backward compatible alias
+    @property
+    def github_token(self) -> str:
+        """Backward compatible alias for token."""
+        return self.token
+
     @classmethod
     def from_env(cls) -> "Config":
-        """Load configuration from GitHub Actions environment variables."""
-        github_token = os.environ.get("INPUT_GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN", "")
-        if not github_token:
-            raise ValueError("GitHub token is required. Set INPUT_GITHUB_TOKEN or GITHUB_TOKEN.")
+        """Load configuration from environment variables."""
+        # Detect provider
+        provider_str = os.environ.get("INPUT_PROVIDER", "")
+        provider = ProviderType(provider_str.lower()) if provider_str else detect_provider()
+
+        # Get token (support multiple env var names for backward compat)
+        token = (
+            os.environ.get("INPUT_TOKEN")
+            or os.environ.get("INPUT_GITHUB_TOKEN")
+            or os.environ.get("GITHUB_TOKEN")
+            or os.environ.get("GITLAB_TOKEN")
+            or os.environ.get("AZURE_DEVOPS_TOKEN")
+            or os.environ.get("BITBUCKET_TOKEN")
+            or ""
+        )
+        if not token:
+            raise ValueError(
+                "Authentication token is required. "
+                "Set INPUT_TOKEN, INPUT_GITHUB_TOKEN, or provider-specific token env var."
+            )
 
         model = os.environ.get("INPUT_MODEL", "")
         if not model:
             raise ValueError("Model is required. Set INPUT_MODEL.")
 
-        # Parse repository info
-        github_repository = os.environ.get("GITHUB_REPOSITORY", "")
-        if "/" not in github_repository:
-            raise ValueError("GITHUB_REPOSITORY must be in format 'owner/repo'")
-        repo_owner, repo_name = github_repository.split("/", 1)
+        # Parse repository info based on provider
+        repo_owner = ""
+        repo_name = ""
+        pr_number = 0
 
-        # Parse PR number from event
-        pr_number_str = os.environ.get("PR_NUMBER", "")
-        if not pr_number_str:
-            # Try to get from GITHUB_REF (refs/pull/123/merge)
-            github_ref = os.environ.get("GITHUB_REF", "")
-            if "/pull/" in github_ref:
-                with contextlib.suppress(IndexError):
-                    pr_number_str = github_ref.split("/pull/")[1].split("/")[0]
+        if provider == ProviderType.GITHUB:
+            repo_owner, repo_name = _parse_github_repo()
+            pr_number = _parse_github_pr_number()
 
-        if not pr_number_str:
-            raise ValueError(
-                "Could not determine PR number. "
-                "Set PR_NUMBER env var or ensure GITHUB_REF contains '/pull/<number>/'"
-            )
+        elif provider == ProviderType.AZURE_DEVOPS:
+            pr_number = _parse_azure_pr_number()
 
-        try:
-            pr_number = int(pr_number_str)
-        except ValueError as e:
-            raise ValueError(f"Invalid PR number format: '{pr_number_str}' is not a number") from e
+        elif provider == ProviderType.GITLAB:
+            pr_number = _parse_gitlab_mr_number()
+
+        elif provider == ProviderType.BITBUCKET:
+            pr_number = _parse_bitbucket_pr_number()
 
         min_severity = os.environ.get("INPUT_MIN_SEVERITY", "warning").lower()
         if min_severity not in ("error", "warning", "info"):
@@ -80,7 +118,8 @@ class Config:
             max_comments = 10
 
         return cls(
-            github_token=github_token,
+            token=token,
+            provider=provider,
             model=model,
             agent_spec_path=os.environ.get("INPUT_AGENT_SPEC_PATH", ".github/ai-reviewer.md"),
             post_summary=os.environ.get("INPUT_POST_SUMMARY", "true").lower() == "true",
@@ -93,4 +132,101 @@ class Config:
             repo_owner=repo_owner,
             repo_name=repo_name,
             pr_number=pr_number,
+            # Azure DevOps
+            azure_org_url=os.environ.get("AZURE_DEVOPS_ORG")
+            or os.environ.get("SYSTEM_COLLECTIONURI"),
+            azure_project=os.environ.get("AZURE_DEVOPS_PROJECT")
+            or os.environ.get("SYSTEM_TEAMPROJECT"),
+            azure_repository=os.environ.get("AZURE_DEVOPS_REPOSITORY")
+            or os.environ.get("BUILD_REPOSITORY_NAME"),
+            # GitLab
+            gitlab_url=os.environ.get("GITLAB_URL") or os.environ.get("CI_SERVER_URL"),
+            gitlab_project=os.environ.get("GITLAB_PROJECT") or os.environ.get("CI_PROJECT_PATH"),
+            # Bitbucket
+            bitbucket_workspace=os.environ.get("BITBUCKET_WORKSPACE"),
+            bitbucket_repo_slug=os.environ.get("BITBUCKET_REPO_SLUG"),
+            bitbucket_username=os.environ.get("BITBUCKET_USERNAME"),
         )
+
+
+def _parse_github_repo() -> tuple[str, str]:
+    """Parse GitHub repository owner and name."""
+    github_repository = os.environ.get("GITHUB_REPOSITORY", "")
+    if "/" not in github_repository:
+        raise ValueError("GITHUB_REPOSITORY must be in format 'owner/repo'")
+    return github_repository.split("/", 1)
+
+
+def _parse_github_pr_number() -> int:
+    """Parse GitHub PR number."""
+    pr_number_str = os.environ.get("PR_NUMBER", "")
+    if not pr_number_str:
+        github_ref = os.environ.get("GITHUB_REF", "")
+        if "/pull/" in github_ref:
+            with contextlib.suppress(IndexError):
+                pr_number_str = github_ref.split("/pull/")[1].split("/")[0]
+
+    if not pr_number_str:
+        raise ValueError(
+            "Could not determine PR number. "
+            "Set PR_NUMBER env var or ensure GITHUB_REF contains '/pull/<number>/'"
+        )
+
+    try:
+        return int(pr_number_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid PR number format: '{pr_number_str}' is not a number") from e
+
+
+def _parse_azure_pr_number() -> int:
+    """Parse Azure DevOps PR number."""
+    pr_number_str = os.environ.get("SYSTEM_PULLREQUESTID", "")
+    if not pr_number_str:
+        pr_number_str = os.environ.get("PR_NUMBER", "")
+
+    if not pr_number_str:
+        raise ValueError(
+            "Could not determine PR number. "
+            "Set SYSTEM_PULLREQUESTID or PR_NUMBER env var."
+        )
+
+    try:
+        return int(pr_number_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid PR number format: '{pr_number_str}' is not a number") from e
+
+
+def _parse_gitlab_mr_number() -> int:
+    """Parse GitLab MR number."""
+    mr_number_str = os.environ.get("CI_MERGE_REQUEST_IID", "")
+    if not mr_number_str:
+        mr_number_str = os.environ.get("PR_NUMBER", "")
+
+    if not mr_number_str:
+        raise ValueError(
+            "Could not determine MR number. "
+            "Set CI_MERGE_REQUEST_IID or PR_NUMBER env var."
+        )
+
+    try:
+        return int(mr_number_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid MR number format: '{mr_number_str}' is not a number") from e
+
+
+def _parse_bitbucket_pr_number() -> int:
+    """Parse Bitbucket PR number."""
+    pr_number_str = os.environ.get("BITBUCKET_PR_ID", "")
+    if not pr_number_str:
+        pr_number_str = os.environ.get("PR_NUMBER", "")
+
+    if not pr_number_str:
+        raise ValueError(
+            "Could not determine PR number. "
+            "Set BITBUCKET_PR_ID or PR_NUMBER env var."
+        )
+
+    try:
+        return int(pr_number_str)
+    except ValueError as e:
+        raise ValueError(f"Invalid PR number format: '{pr_number_str}' is not a number") from e

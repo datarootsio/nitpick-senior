@@ -6,7 +6,6 @@ import os
 import sys
 
 from src.config import Config
-from src.github.client import GitHubClient
 from src.github.comments import (
     deduplicate_comments,
     filter_by_severity,
@@ -15,6 +14,7 @@ from src.github.comments import (
 )
 from src.llm.client import LLMClient
 from src.prompts.loader import load_agent_spec
+from src.providers import ProviderType, create_provider
 from src.review.analyzer import analyze_pr
 
 # Configure logging
@@ -32,13 +32,31 @@ async def main() -> int:
         logger.info("Loading configuration...")
         config = Config.from_env()
 
-        # Initialize clients
-        logger.info(f"Initializing clients for {config.repo_owner}/{config.repo_name}")
-        github_client = GitHubClient(
-            token=config.github_token,
+        # Create provider
+        logger.info(f"Creating {config.provider.value} provider...")
+        provider = create_provider(
+            provider_type=config.provider,
+            token=config.token,
+            # GitHub
             repo_owner=config.repo_owner,
             repo_name=config.repo_name,
+            # Azure DevOps
+            azure_org_url=config.azure_org_url,
+            azure_project=config.azure_project,
+            azure_repository=config.azure_repository,
+            # GitLab
+            gitlab_url=config.gitlab_url,
+            gitlab_project=config.gitlab_project,
+            # Bitbucket
+            bitbucket_workspace=config.bitbucket_workspace,
+            bitbucket_repo_slug=config.bitbucket_repo_slug,
+            bitbucket_username=config.bitbucket_username,
         )
+
+        if config.provider == ProviderType.GITHUB:
+            logger.info(f"Initialized for {config.repo_owner}/{config.repo_name}")
+        else:
+            logger.info(f"Initialized {config.provider.value} provider")
 
         llm_client = LLMClient(model=config.model)
         logger.info(f"Using model: {config.model}")
@@ -50,7 +68,7 @@ async def main() -> int:
         logger.info(f"Analyzing PR #{config.pr_number}...")
         logger.info(f"Context collection: {'enabled' if config.context_enabled else 'disabled'}")
         response = await analyze_pr(
-            github_client=github_client,
+            provider=provider,
             llm_client=llm_client,
             pr_number=config.pr_number,
             system_prompt=system_prompt,
@@ -77,7 +95,7 @@ async def main() -> int:
         if config.post_inline_comments and filtered_comments:
             logger.info(f"Syncing {len(filtered_comments)} comments...")
             edited, created, minimized = sync_comments(
-                client=github_client,
+                provider=provider,
                 pr_number=config.pr_number,
                 summary=response.summary,
                 new_comments=filtered_comments,
@@ -91,7 +109,7 @@ async def main() -> int:
         elif config.post_summary:
             logger.info("Posting summary comment...")
             post_summary_comment(
-                client=github_client,
+                provider=provider,
                 pr_number=config.pr_number,
                 summary=response.summary,
                 comment_count=0,

@@ -13,7 +13,7 @@ from .extractors.imports import detect_language, extract_imports, resolve_import
 from .models import RelatedFile, RepoContext
 
 if TYPE_CHECKING:
-    from src.github.client import GitHubClient
+    from src.providers import GitProvider
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ class ContextCollector:
 
     def __init__(
         self,
-        github_client: GitHubClient,
+        provider: GitProvider,
         max_context_tokens: int = DEFAULT_MAX_CONTEXT_TOKENS,
         max_readme_tokens: int = DEFAULT_MAX_README_TOKENS,
         max_file_tokens: int = DEFAULT_MAX_FILE_TOKENS,
@@ -82,12 +82,12 @@ class ContextCollector:
         """Initialize the context collector.
 
         Args:
-            github_client: GitHub API client
+            provider: Git provider (GitHub, GitLab, etc.)
             max_context_tokens: Maximum total tokens for context
             max_readme_tokens: Maximum tokens for README
             max_file_tokens: Maximum tokens per related file
         """
-        self.github_client = github_client
+        self.provider = provider
         self.max_context_tokens = max_context_tokens
         self.max_readme_tokens = max_readme_tokens
         self.max_file_tokens = max_file_tokens
@@ -112,11 +112,11 @@ class ContextCollector:
         tokens_used = 0
 
         # Get the PR head ref for fetching files
-        pr = self.github_client.get_pull_request(pr_number)
-        ref = pr.head.sha
+        pr_info = self.provider.get_pull_request(pr_number)
+        ref = pr_info.head_sha
 
         # 1. Fetch README
-        readme = fetch_readme(self.github_client, ref)
+        readme = fetch_readme(self.provider, ref)
         if readme:
             readme = truncate_to_tokens(readme, self.max_readme_tokens)
             readme_tokens = estimate_tokens(readme)
@@ -142,7 +142,7 @@ class ContextCollector:
                 logger.debug(f"Skipping sensitive file: {path}")
                 continue
 
-            content = fetch_file_content(self.github_client, path, ref)
+            content = fetch_file_content(self.provider, path, ref)
             if content is None:
                 continue
 
@@ -189,7 +189,7 @@ class ContextCollector:
                 continue
 
             # Fetch the full file content to extract all imports
-            content = fetch_file_content(self.github_client, file_path, ref)
+            content = fetch_file_content(self.provider, file_path, ref)
             if not content:
                 continue
 

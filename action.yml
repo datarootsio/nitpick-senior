@@ -3,9 +3,20 @@ description: 'Um, actually... AI-powered code review that catches what you misse
 author: 'datarootsio'
 
 inputs:
+  provider:
+    description: 'Git provider (github, azure_devops, gitlab, bitbucket). Auto-detected if not specified.'
+    required: false
+    default: ''
+
+  token:
+    description: 'Authentication token for the Git provider'
+    required: false
+    default: ''
+
   github_token:
-    description: 'GitHub token for PR access'
-    required: true
+    description: 'GitHub token for PR access (backward compatible alias for token)'
+    required: false
+    default: ''
 
   model:
     description: 'LiteLLM model string (e.g., gpt-4o, anthropic/claude-sonnet-4-5-20250929, azure/gpt-4o, bedrock/anthropic.claude-3-5-sonnet)'
@@ -55,6 +66,8 @@ runs:
   using: 'docker'
   image: 'Dockerfile'
   env:
+    INPUT_PROVIDER: ${{ inputs.provider }}
+    INPUT_TOKEN: ${{ inputs.token }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
     INPUT_MODEL: ${{ inputs.model }}
     INPUT_AGENT_SPEC_PATH: ${{ inputs.agent_spec_path }}
