@@ -21,23 +21,29 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-# Pricing per million tokens (input, output)
+# Pricing per million tokens (input, output) - Updated March 2026
 MODEL_PRICING = {
     # OpenAI
+    "gpt-4.1": {"input": 2.00, "output": 8.00},
+    "gpt-4.1-nano": {"input": 0.10, "output": 0.40},
     "gpt-4o": {"input": 2.50, "output": 10.00},
     "gpt-4o-mini": {"input": 0.15, "output": 0.60},
-    "gpt-4-turbo": {"input": 10.00, "output": 30.00},
-    "gpt-4": {"input": 30.00, "output": 60.00},
-    # Anthropic
+    "o3": {"input": 2.00, "output": 8.00},
+    "o4-mini": {"input": 1.10, "output": 4.40},
+    "o1": {"input": 15.00, "output": 60.00},
+    # Anthropic Claude
+    "claude-opus-4-6": {"input": 5.00, "output": 25.00},
+    "claude-sonnet-4-6": {"input": 3.00, "output": 15.00},
+    "claude-haiku-4-5": {"input": 1.00, "output": 5.00},
     "claude-sonnet-4-5-20250929": {"input": 3.00, "output": 15.00},
     "claude-3-5-sonnet-20241022": {"input": 3.00, "output": 15.00},
-    "claude-3-opus-20240229": {"input": 15.00, "output": 75.00},
-    "claude-3-haiku-20240307": {"input": 0.25, "output": 1.25},
     # Google Gemini
-    "gemini-2.5-flash": {"input": 0.15, "output": 0.60},
+    "gemini-3.1-pro": {"input": 2.00, "output": 12.00},
+    "gemini-3-flash": {"input": 0.50, "output": 3.00},
+    "gemini-3.1-flash-lite": {"input": 0.25, "output": 1.50},
     "gemini-2.5-pro": {"input": 1.25, "output": 10.00},
-    "gemini-1.5-flash": {"input": 0.075, "output": 0.30},
-    "gemini-1.5-pro": {"input": 1.25, "output": 5.00},
+    "gemini-2.5-flash": {"input": 0.30, "output": 2.50},
+    "gemini-2.5-flash-lite": {"input": 0.10, "output": 0.40},
 }
 
 
