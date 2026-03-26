@@ -199,7 +199,3 @@ uv run pytest
 # Run linter
 uv run ruff check src/
 ```
-
-## License
-
-MIT
