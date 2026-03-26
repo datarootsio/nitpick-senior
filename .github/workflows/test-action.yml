@@ -26,7 +26,7 @@ jobs:
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: google/gemini-2.0-flash
+          model: google/gemini-2.5-flash
           static_analysis_file: semgrep.json
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
