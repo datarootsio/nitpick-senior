@@ -26,7 +26,7 @@ jobs:
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: openrouter/stepfun/step-3.5-flash:free
+          model: google/gemini-2.0-flash
           static_analysis_file: semgrep.json
         env:
-          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}

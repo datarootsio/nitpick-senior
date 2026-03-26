@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 from pydantic_ai.models.anthropic import AnthropicModel
+from pydantic_ai.models.google import GoogleModel
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
@@ -47,6 +48,7 @@ def create_model(model_string: str):
         model_string: Model identifier. Supported formats:
             - "gpt-4o" (OpenAI)
             - "anthropic/claude-..." (Anthropic)
+            - "google/gemini-..." (Google AI Studio)
             - "azure/gpt-4o" (Azure OpenAI)
             - "openrouter/provider/model" (OpenRouter)
 
@@ -55,6 +57,8 @@ def create_model(model_string: str):
     """
     if model_string.startswith("anthropic/"):
         return AnthropicModel(model_string.replace("anthropic/", ""))
+    elif model_string.startswith("google/"):
+        return GoogleModel(model_string.replace("google/", ""))
     elif model_string.startswith("azure/"):
         provider = OpenAIProvider(
             base_url=os.environ.get("AZURE_OPENAI_ENDPOINT"),
