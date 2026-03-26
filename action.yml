@@ -19,7 +19,7 @@ inputs:
     default: ''
 
   model:
-    description: 'LiteLLM model string (e.g., gpt-4o, anthropic/claude-sonnet-4-5-20250929, azure/gpt-4o, bedrock/anthropic.claude-3-5-sonnet)'
+    description: 'Model string (e.g., gpt-4o, anthropic/claude-sonnet-4-5-20250929, azure/gpt-4o, openrouter/anthropic/claude-3.5-sonnet)'
     required: true
 
   agent_spec_path:
@@ -62,6 +62,11 @@ inputs:
     required: false
     default: '5000'
 
+  static_analysis_file:
+    description: 'Path to semgrep JSON output file for static analysis findings'
+    required: false
+    default: ''
+
 runs:
   using: 'docker'
   image: 'Dockerfile'
@@ -78,6 +83,7 @@ runs:
     INPUT_RESOLVE_OUTDATED: ${{ inputs.resolve_outdated }}
     INPUT_CONTEXT_ENABLED: ${{ inputs.context_enabled }}
     INPUT_CONTEXT_MAX_TOKENS: ${{ inputs.context_max_tokens }}
+    INPUT_STATIC_ANALYSIS_FILE: ${{ inputs.static_analysis_file }}
 
 branding:
   icon: 'eye'

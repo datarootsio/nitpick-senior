@@ -14,10 +14,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/python
+            p/security-audit
+          generateSarif: false
+        env:
+          SEMGREP_APP_TOKEN: ""
+        continue-on-error: true
+
       - name: Nitpick Senior
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           model: openrouter/stepfun/step-3.5-flash:free
+          static_analysis_file: semgrep.json
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
