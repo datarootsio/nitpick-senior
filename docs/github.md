@@ -124,6 +124,7 @@ For GitHub Enterprise Server, the action works the same way. Ensure your self-ho
 | `min_severity` | `warning` | Minimum severity (error, warning, info) |
 | `context_enabled` | `true` | Include repo context in review |
 | `context_max_tokens` | `5000` | Max tokens for context |
+| `static_analysis_file` | - | Path to semgrep JSON output (see [Static Analysis](static-analysis.md)) |
 
 ## Outputs
 

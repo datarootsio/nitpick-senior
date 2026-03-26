@@ -32,7 +32,8 @@ src/
 │   ├── models.py        # Context data models
 │   └── extractors/      # Content extractors
 │       ├── files.py     # File fetching
-│       └── imports.py   # Import resolution
+│       ├── imports.py   # Import resolution
+│       └── static_analysis.py  # Semgrep JSON parser
 ├── prompts/             # Prompt management
 │   ├── loader.py        # Agent spec loading
 │   ├── defaults.py      # Default prompts
@@ -117,6 +118,7 @@ Provider config dataclasses (`GitHubConfig`, `GitLabConfig`, etc.) enable cleane
 
 Gathers repository context to improve review quality:
 - Fetches README for project understanding
+- Parses static analysis findings (semgrep JSON) if provided
 - Extracts imports from changed files
 - Resolves import paths to fetch related code
 
@@ -172,3 +174,10 @@ To support import resolution for a new language:
 1. Add extraction pattern in `context/extractors/imports.py`
 2. Add extension mapping in `detect_language()`
 3. Add resolution logic for local imports
+
+### Adding Static Analysis Tool Support
+
+Currently only semgrep JSON format is supported. To add new tools:
+1. Add parser function in `context/extractors/static_analysis.py`
+2. Detect format and dispatch in `parse_semgrep_json()` (or create dispatcher)
+3. Return `list[StaticAnalysisFinding]` with normalized severity
