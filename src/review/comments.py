@@ -3,6 +3,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from src.context.models import StaticAnalysisFinding
 from src.llm.response import ReviewComment, ReviewResponse
 from src.providers import ReviewCommentInfo
 from src.review.formatters import (
@@ -17,6 +18,8 @@ if TYPE_CHECKING:
     from src.providers import GitProvider
 
 logger = logging.getLogger(__name__)
+
+STATIC_ANALYSIS_HEADER = f"## :mag: {BOT_NAME} - Static Analysis"
 
 
 def deduplicate_comments(comments: list[ReviewComment]) -> list[ReviewComment]:
@@ -37,6 +40,84 @@ def filter_by_severity(comments: list[ReviewComment], min_severity: str) -> list
     """Filter comments to only include those at or above the minimum severity."""
     min_level = SEVERITY_LEVELS.get(min_severity, 2)
     return [c for c in comments if SEVERITY_LEVELS.get(c.severity, 1) >= min_level]
+
+
+def post_static_analysis_comment(
+    provider: "GitProvider",
+    pr_number: int,
+    findings: list[StaticAnalysisFinding],
+) -> bool:
+    """Post or update a separate comment for static analysis findings.
+
+    This keeps semgrep/static analysis findings separate from LLM review comments,
+    ensuring they are always visible regardless of the LLM comment limit.
+
+    Args:
+        provider: Git provider (GitHub, GitLab, etc.)
+        pr_number: Pull request number
+        findings: List of static analysis findings
+
+    Returns:
+        True if comment was posted/updated, False if no findings
+    """
+    if not findings:
+        return False
+
+    severity_emoji = {
+        "ERROR": ":x:",
+        "WARNING": ":warning:",
+        "INFO": ":information_source:",
+    }
+
+    lines = [
+        STATIC_ANALYSIS_HEADER,
+        "",
+        f"Found **{len(findings)}** issue(s) via static analysis (semgrep):",
+        "",
+        "| Severity | File | Line | Rule | Message |",
+        "|----------|------|------|------|---------|",
+    ]
+
+    for f in findings:
+        emoji = severity_emoji.get(f.severity, ":warning:")
+        # Escape pipe characters in message
+        safe_message = f.message.replace("|", "\\|")[:100]
+        if len(f.message) > 100:
+            safe_message += "..."
+        lines.append(
+            f"| {emoji} {f.severity} | `{f.file}` | {f.line} | `{f.rule_id}` | {safe_message} |"
+        )
+
+    lines.append("")
+    lines.append(
+        "> :bulb: These findings are from automated static analysis. "
+        "The AI review below focuses on issues requiring human judgment."
+    )
+    lines.append(BOT_SIGNATURE)
+
+    body = "\n".join(lines)
+
+    try:
+        # Check for existing static analysis comment to edit
+        existing_comments = provider.get_bot_issue_comments(pr_number)
+        for comment in existing_comments:
+            if comment.body.startswith(STATIC_ANALYSIS_HEADER):
+                if comment.body != body:
+                    if provider.edit_issue_comment(pr_number, comment.id, body):
+                        logger.info("Updated existing static analysis comment")
+                        return True
+                    logger.warning("Failed to edit static analysis comment, creating new one")
+                else:
+                    logger.info("Static analysis comment unchanged, skipping update")
+                    return True
+
+        # No existing comment or edit failed, create new
+        provider.post_issue_comment(pr_number, body)
+        logger.info(f"Posted static analysis comment with {len(findings)} findings")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to post static analysis comment: {e}")
+        return False
 
 
 def post_summary_comment(

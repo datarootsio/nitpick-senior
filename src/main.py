@@ -6,6 +6,7 @@ import os
 import sys
 
 from src.config import Config
+from src.context.extractors.static_analysis import parse_semgrep_json
 from src.llm.client import LLMClient
 from src.prompts.loader import load_agent_spec
 from src.providers import ProviderType, create_provider
@@ -13,6 +14,7 @@ from src.review import (
     analyze_pr,
     deduplicate_comments,
     filter_by_severity,
+    post_static_analysis_comment,
     post_summary_comment,
     sync_comments,
 )
@@ -63,6 +65,17 @@ async def main() -> int:
 
         # Load agent specification
         system_prompt = load_agent_spec(config.agent_spec_path)
+
+        # Post static analysis findings as a separate comment (if any)
+        if config.static_analysis_file:
+            logger.info("Checking for static analysis findings...")
+            changed_files = provider.get_changed_files(config.pr_number)
+            static_findings = parse_semgrep_json(config.static_analysis_file, changed_files)
+            if static_findings:
+                logger.info(f"Found {len(static_findings)} static analysis findings")
+                post_static_analysis_comment(provider, config.pr_number, static_findings)
+            else:
+                logger.info("No static analysis findings for changed files")
 
         # Analyze the PR
         logger.info(f"Analyzing PR #{config.pr_number}...")

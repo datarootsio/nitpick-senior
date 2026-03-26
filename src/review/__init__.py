@@ -2,6 +2,7 @@ from .analyzer import analyze_pr
 from .comments import (
     deduplicate_comments,
     filter_by_severity,
+    post_static_analysis_comment,
     post_summary_comment,
     sync_comments,
 )
@@ -21,6 +22,7 @@ __all__ = [
     "analyze_pr",
     "deduplicate_comments",
     "filter_by_severity",
+    "post_static_analysis_comment",
     "post_summary_comment",
     "sync_comments",
     "BOT_NAME",

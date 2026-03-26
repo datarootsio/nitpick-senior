@@ -218,11 +218,16 @@ If there are no significant issues to report, return an empty comments array."""
 ```""")
 
         if context.static_analysis:
-            parts.append("### Static Analysis Findings")
+            parts.append("### Static Analysis Findings (Posted Separately)")
             parts.append(
-                "The following issues were detected by static analysis tools. "
-                "Consider these when reviewing the code changes:"
+                "The following issues were detected by static analysis tools and will be "
+                "reported in a separate comment. **Do NOT duplicate these findings** in your "
+                "review comments. Instead, focus on issues that require human judgment: "
+                "logic errors, edge cases, architectural concerns, API misuse, missing "
+                "validation, and other issues that static analysis cannot detect."
             )
+            parts.append("")
+            parts.append("Findings for reference (already reported separately):")
             for f in context.static_analysis:
                 parts.append(
                     f"- **{f.file}:{f.line}** [{f.severity}] `{f.rule_id}`: {f.message}"
