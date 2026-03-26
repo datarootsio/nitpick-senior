@@ -53,7 +53,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: datarootsio/github-reviewer@v1
+      - uses: datarootsio/nitpick-senior@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           model: gpt-4o
@@ -136,7 +136,7 @@ Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 ### OpenAI
 
 ```yaml
-- uses: datarootsio/github-reviewer@v1
+- uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: gpt-4o
@@ -147,7 +147,7 @@ Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 ### Anthropic
 
 ```yaml
-- uses: datarootsio/github-reviewer@v1
+- uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: anthropic/claude-sonnet-4-5-20250929
@@ -158,7 +158,7 @@ Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 ### Azure OpenAI
 
 ```yaml
-- uses: datarootsio/github-reviewer@v1
+- uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: azure/gpt-4o
@@ -172,7 +172,7 @@ Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 Access any model through OpenRouter's unified API:
 
 ```yaml
-- uses: datarootsio/github-reviewer@v1
+- uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: openrouter/anthropic/claude-3.5-sonnet

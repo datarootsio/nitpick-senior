@@ -11,8 +11,8 @@ Thank you for your interest in contributing! This guide will help you get starte
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/datarootsio/github-reviewer.git
-   cd github-reviewer
+   git clone https://github.com/datarootsio/nitpick-senior.git
+   cd nitpick-senior
    ```
 
 2. Install dependencies:
