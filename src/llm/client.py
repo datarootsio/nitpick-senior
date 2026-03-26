@@ -95,15 +95,17 @@ def create_model(model_string: str):
 class LLMClient:
     """Client for interacting with LLMs via Pydantic AI."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, max_comments: int = 10):
         """Initialize the LLM client.
 
         Args:
             model: Model string (e.g., "gpt-4o", "anthropic/claude-sonnet-4-5-20250929")
+            max_comments: Maximum number of review comments to generate
         """
         self.model_string = model
         self.model = create_model(model)
         self.usage = UsageStats(model=model)
+        self.max_comments = max_comments
 
     async def review(
         self,
@@ -173,8 +175,8 @@ class LLMClient:
 ```""")
 
         # Add guidelines
-        sections.append("""## Guidelines for comments:
-- MAXIMUM 5 comments total - be extremely selective
+        sections.append(f"""## Guidelines for comments:
+- MAXIMUM {self.max_comments} comments total - be extremely selective
 - Only comment on bugs, security issues, or serious problems
 - Use "error" for critical issues, "warning" for significant problems
 - NEVER comment on the same issue twice, even on different lines

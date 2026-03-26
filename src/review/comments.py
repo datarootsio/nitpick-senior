@@ -179,10 +179,11 @@ def sync_comments(
     new_comments: list[ReviewComment],
     max_comments: int = 20,
     response: ReviewResponse | None = None,
+    resolve_outdated: bool = True,
 ) -> tuple[int, int, int]:
     """Sync new comments with existing bot comments.
 
-    Edits existing comments at same location, creates new ones, deletes outdated.
+    Edits existing comments at same location, creates new ones, optionally deletes outdated.
 
     Args:
         provider: Git provider (GitHub, GitLab, etc.)
@@ -191,6 +192,7 @@ def sync_comments(
         new_comments: List of review comments to post
         max_comments: Maximum number of inline comments
         response: Optional structured review response for enhanced summary
+        resolve_outdated: Whether to delete outdated comments from previous runs
 
     Returns (edited, created, deleted) counts.
     """
@@ -237,24 +239,25 @@ def sync_comments(
             except Exception as e:
                 logger.warning(f"Failed to create comment: {e}")
 
-    # Delete old comments not in new set
-    for location, old_comment in existing_by_location.items():
-        if location not in new_by_location:
+    # Delete old comments not in new set (if resolve_outdated is enabled)
+    if resolve_outdated:
+        for location, old_comment in existing_by_location.items():
+            if location not in new_by_location:
+                try:
+                    if provider.delete_review_comment(old_comment.id):
+                        deleted += 1
+                        logger.info(f"Deleted comment on {old_comment.path}:{old_comment.line}")
+                except Exception as e:
+                    logger.warning(f"Failed to delete comment: {e}")
+
+        # Delete stale comments (line=None means code changed and comment is stale)
+        for old_comment in stale_comments:
             try:
                 if provider.delete_review_comment(old_comment.id):
                     deleted += 1
-                    logger.info(f"Deleted comment on {old_comment.path}:{old_comment.line}")
+                    logger.info(f"Deleted stale comment on {old_comment.path}")
             except Exception as e:
-                logger.warning(f"Failed to delete comment: {e}")
-
-    # Delete stale comments (line=None means code changed and comment is stale)
-    for old_comment in stale_comments:
-        try:
-            if provider.delete_review_comment(old_comment.id):
-                deleted += 1
-                logger.info(f"Deleted stale comment on {old_comment.path}")
-        except Exception as e:
-            logger.warning(f"Failed to delete stale comment: {e}")
+                logger.warning(f"Failed to delete stale comment: {e}")
 
     # Post summary comment
     total_synced = edited + created

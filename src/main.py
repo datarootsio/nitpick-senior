@@ -60,8 +60,8 @@ async def main() -> int:
         else:
             logger.info(f"Initialized {config.provider.value} provider")
 
-        llm_client = LLMClient(model=config.model)
-        logger.info(f"Using model: {config.model}")
+        llm_client = LLMClient(model=config.model, max_comments=config.max_comments)
+        logger.info(f"Using model: {config.model} (max {config.max_comments} comments)")
 
         # Load agent specification
         system_prompt = load_agent_spec(config.agent_spec_path)
@@ -115,6 +115,7 @@ async def main() -> int:
                 new_comments=filtered_comments,
                 max_comments=config.max_comments,
                 response=response,
+                resolve_outdated=config.resolve_outdated,
             )
             comment_count = edited + created
             logger.info(

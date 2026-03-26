@@ -27,6 +27,7 @@ class Config:
     post_inline_comments: bool
     max_comments: int
     min_severity: str
+    resolve_outdated: bool
 
     # Context settings
     context_enabled: bool
@@ -105,6 +106,7 @@ class Config:
         context_enabled = os.environ.get("INPUT_CONTEXT_ENABLED", "true").lower() == "true"
         context_max_tokens = parse_int_env("INPUT_CONTEXT_MAX_TOKENS", 5000)
         max_comments = parse_int_env("INPUT_MAX_COMMENTS", 10)
+        resolve_outdated = os.environ.get("INPUT_RESOLVE_OUTDATED", "true").lower() == "true"
 
         return cls(
             token=token,
@@ -116,6 +118,7 @@ class Config:
             == "true",
             max_comments=max_comments,
             min_severity=min_severity,
+            resolve_outdated=resolve_outdated,
             context_enabled=context_enabled,
             context_max_tokens=context_max_tokens,
             repo_owner=repo_owner,
