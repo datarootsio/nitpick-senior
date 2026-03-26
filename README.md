@@ -11,19 +11,23 @@
 <p align="center">
   <a href="#features">Features</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#supported-providers">Providers</a> •
+  <a href="#git-platforms">Git Platforms</a> •
+  <a href="#llm-providers">LLM Providers</a> •
   <a href="#configuration">Configuration</a>
 </p>
 
 ---
 
-A GitHub Action that automatically reviews pull requests using AI. It analyzes code changes and posts inline comments on issues, bugs, and best practice violations.
+An AI-powered code reviewer that works across multiple Git platforms. It analyzes code changes and posts inline comments on issues, bugs, and best practice violations.
 
 ## Features
 
-- **Multi-provider support**: Works with OpenAI, Anthropic, Azure OpenAI, AWS Bedrock, Google Vertex AI, and more via LiteLLM
+- **Multi-platform**: Works with GitHub, GitLab, Azure DevOps, and Bitbucket
+- **Flexible LLM support**: Use OpenAI, Anthropic, Azure OpenAI directly, or access 200+ models via [OpenRouter](https://openrouter.ai)
+- **Powered by Pydantic AI**: Structured outputs with automatic validation and retries
 - **Language agnostic**: Review behavior is defined by an agent spec file in your repo
-- **Inline comments**: Posts comments directly on problematic lines with fix suggestions
+- **Static analysis integration**: Enrich reviews with [Semgrep findings](docs/static-analysis.md)
+- **Inline comments**: Posts comments directly on problematic lines
 - **PR summaries**: Generates a brief summary of the changes
 - **Cost tracking**: Logs token usage and estimated costs
 - **Smart filtering**: Filter comments by severity, auto-resolve outdated comments
@@ -79,29 +83,53 @@ You are a senior code reviewer for this project.
 - Import ordering (handled by isort)
 ```
 
+## Git Platforms
+
+Nitpick Senior works with all major Git platforms:
+
+| Platform | Documentation | Status |
+|----------|---------------|--------|
+| GitHub | [Setup Guide](docs/github.md) | Full support |
+| GitLab | [Setup Guide](docs/gitlab.md) | Full support |
+| Azure DevOps | [Setup Guide](docs/azure-devops.md) | Full support |
+| Bitbucket | [Setup Guide](docs/bitbucket.md) | Full support |
+
+See the [Provider Overview](docs/PROVIDERS.md) for feature comparison across platforms.
+
 ## Inputs
 
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `github_token` | Yes | - | GitHub token for API access |
-| `model` | Yes | - | LiteLLM model string |
+| `model` | Yes | - | Model string (see [LLM Providers](#llm-providers)) |
 | `agent_spec_path` | No | `.github/ai-reviewer.md` | Path to agent spec file |
 | `post_summary` | No | `true` | Post PR summary comment |
 | `post_inline_comments` | No | `true` | Post inline review comments |
 | `max_comments` | No | `10` | Maximum inline comments to post |
 | `min_severity` | No | `warning` | Minimum severity to post (error, warning, info) |
-| `resolve_outdated` | No | `true` | Resolve outdated comments from previous runs |
+| `static_analysis_file` | No | - | Path to semgrep JSON output ([docs](docs/static-analysis.md)) |
 
-## Supported Providers
+## LLM Providers
+
+Nitpick Senior uses [Pydantic AI](https://ai.pydantic.dev/) for LLM interactions, providing structured outputs with automatic validation.
+
+### Direct Providers
 
 | Provider | Model Format | Required Environment Variables |
 |----------|-------------|-------------------------------|
 | OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
 | Anthropic | `anthropic/claude-sonnet-4-5-20250929` | `ANTHROPIC_API_KEY` |
-| Azure OpenAI | `azure/gpt-4o` | `AZURE_API_KEY`, `AZURE_API_BASE` |
-| AWS Bedrock | `bedrock/anthropic.claude-3-5-sonnet` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME` |
-| Google Vertex | `vertex_ai/gemini-pro` | `GOOGLE_APPLICATION_CREDENTIALS` |
-| Google AI Studio | `gemini/gemini-1.5-pro` | `GEMINI_API_KEY` |
+| Azure OpenAI | `azure/gpt-4o` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+
+### OpenRouter (200+ Models)
+
+[OpenRouter](https://openrouter.ai) provides access to models from OpenAI, Anthropic, Google, Meta, Mistral, and many more through a single API.
+
+| Provider | Model Format | Required Environment Variables |
+|----------|-------------|-------------------------------|
+| OpenRouter | `openrouter/anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` |
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 
 ## Provider Examples
 
@@ -135,22 +163,29 @@ You are a senior code reviewer for this project.
     github_token: ${{ secrets.GITHUB_TOKEN }}
     model: azure/gpt-4o
   env:
-    AZURE_API_KEY: ${{ secrets.AZURE_API_KEY }}
-    AZURE_API_BASE: https://your-resource.openai.azure.com
+    AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+    AZURE_OPENAI_ENDPOINT: https://your-resource.openai.azure.com
 ```
 
-### AWS Bedrock
+### OpenRouter
+
+Access any model through OpenRouter's unified API:
 
 ```yaml
 - uses: datarootsio/github-reviewer@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
+    model: openrouter/anthropic/claude-3.5-sonnet
   env:
-    AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-    AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-    AWS_REGION_NAME: us-east-1
+    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 ```
+
+Popular models via OpenRouter:
+- `openrouter/openai/gpt-4o` - OpenAI GPT-4o
+- `openrouter/anthropic/claude-3.5-sonnet` - Anthropic Claude 3.5 Sonnet
+- `openrouter/google/gemini-pro-1.5` - Google Gemini Pro
+- `openrouter/meta-llama/llama-3.1-405b-instruct` - Meta Llama 3.1 405B
+- `openrouter/mistralai/mistral-large` - Mistral Large
 
 ## Local Development
 
