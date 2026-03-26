@@ -10,6 +10,7 @@ from src.utils.tokens import estimate_tokens, truncate_to_tokens
 
 from .extractors.files import fetch_file_content, fetch_readme
 from .extractors.imports import detect_language, extract_imports, resolve_import_paths
+from .extractors.static_analysis import format_findings, parse_semgrep_json
 from .models import RelatedFile, RepoContext
 
 if TYPE_CHECKING:
@@ -78,6 +79,7 @@ class ContextCollector:
         max_context_tokens: int = DEFAULT_MAX_CONTEXT_TOKENS,
         max_readme_tokens: int = DEFAULT_MAX_README_TOKENS,
         max_file_tokens: int = DEFAULT_MAX_FILE_TOKENS,
+        static_analysis_file: str | None = None,
     ):
         """Initialize the context collector.
 
@@ -86,11 +88,13 @@ class ContextCollector:
             max_context_tokens: Maximum total tokens for context
             max_readme_tokens: Maximum tokens for README
             max_file_tokens: Maximum tokens per related file
+            static_analysis_file: Path to semgrep JSON output file
         """
         self.provider = provider
         self.max_context_tokens = max_context_tokens
         self.max_readme_tokens = max_readme_tokens
         self.max_file_tokens = max_file_tokens
+        self.static_analysis_file = static_analysis_file
 
     async def collect(
         self,
@@ -125,7 +129,26 @@ class ContextCollector:
                 tokens_used += readme_tokens
                 logger.info(f"Added README ({readme_tokens} tokens)")
 
-        # 2. Extract and fetch imported files
+        # 2. Load static analysis findings (if provided)
+        if self.static_analysis_file:
+            findings = parse_semgrep_json(self.static_analysis_file, changed_files)
+            if findings:
+                findings_text = format_findings(findings)
+                findings_tokens = estimate_tokens(findings_text)
+
+                if tokens_used + findings_tokens <= self.max_context_tokens:
+                    context.static_analysis = findings
+                    tokens_used += findings_tokens
+                    logger.info(
+                        f"Added {len(findings)} static analysis findings ({findings_tokens} tokens)"
+                    )
+                else:
+                    logger.warning(
+                        f"Static analysis findings ({findings_tokens} tokens) "
+                        "exceed remaining budget"
+                    )
+
+        # 3. Extract and fetch imported files
         imported_paths = self._extract_imported_files(changed_files, diff_content, ref)
 
         for path in imported_paths:

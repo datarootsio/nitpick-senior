@@ -196,6 +196,17 @@ If there are no significant issues to report, return an empty comments array."""
 {file.content}
 ```""")
 
+        if context.static_analysis:
+            parts.append("### Static Analysis Findings")
+            parts.append(
+                "The following issues were detected by static analysis tools. "
+                "Consider these when reviewing the code changes:"
+            )
+            for f in context.static_analysis:
+                parts.append(
+                    f"- **{f.file}:{f.line}** [{f.severity}] `{f.rule_id}`: {f.message}"
+                )
+
         return "\n\n".join(parts)
 
     def _calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
