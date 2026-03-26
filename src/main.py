@@ -74,6 +74,7 @@ async def main() -> int:
             system_prompt=system_prompt,
             context_enabled=config.context_enabled,
             context_max_tokens=config.context_max_tokens,
+            static_analysis_file=config.static_analysis_file,
         )
 
         # Deduplicate comments first

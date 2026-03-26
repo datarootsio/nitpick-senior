@@ -51,6 +51,9 @@ class Config:
     bitbucket_repo_slug: str | None
     bitbucket_username: str | None
 
+    # Static analysis settings
+    static_analysis_file: str | None
+
     # Backward compatible alias
     @property
     def github_token(self) -> str:
@@ -132,6 +135,8 @@ class Config:
             bitbucket_workspace=os.environ.get("BITBUCKET_WORKSPACE"),
             bitbucket_repo_slug=os.environ.get("BITBUCKET_REPO_SLUG"),
             bitbucket_username=os.environ.get("BITBUCKET_USERNAME"),
+            # Static analysis
+            static_analysis_file=os.environ.get("INPUT_STATIC_ANALYSIS_FILE") or None,
         )
 
 

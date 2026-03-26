@@ -46,6 +46,7 @@ async def analyze_pr(
     system_prompt: str,
     context_enabled: bool = True,
     context_max_tokens: int = DEFAULT_CONTEXT_TOKENS,
+    static_analysis_file: str | None = None,
 ) -> ReviewResponse:
     """Analyze a pull request and generate review feedback.
 
@@ -56,6 +57,7 @@ async def analyze_pr(
         system_prompt: Agent specification / system prompt
         context_enabled: Whether to collect repository context
         context_max_tokens: Maximum tokens for context
+        static_analysis_file: Path to semgrep JSON output file
 
     Returns:
         ReviewResponse with summary and comments
@@ -79,6 +81,7 @@ async def analyze_pr(
         collector = ContextCollector(
             provider=provider,
             max_context_tokens=context_max_tokens,
+            static_analysis_file=static_analysis_file,
         )
         context = await collector.collect(pr_number, changed_files, diff_content)
         if context.is_empty():
