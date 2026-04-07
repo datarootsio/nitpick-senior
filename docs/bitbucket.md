@@ -125,6 +125,69 @@ definitions:
       memory: 2048
 ```
 
+## LLM Provider Examples
+
+### OpenAI
+
+```yaml
+- step:
+    name: AI Code Review
+    image: ghcr.io/datarootsio/nitpick-senior:latest
+    script:
+      - export INPUT_PROVIDER=bitbucket
+      - export INPUT_MODEL=gpt-4o
+      - python -m src.main
+```
+
+Required variable: `OPENAI_API_KEY`
+
+### Anthropic
+
+```yaml
+- step:
+    name: AI Code Review
+    image: ghcr.io/datarootsio/nitpick-senior:latest
+    script:
+      - export INPUT_PROVIDER=bitbucket
+      - export INPUT_MODEL=anthropic/claude-sonnet-4-5-20250929
+      - python -m src.main
+```
+
+Required variable: `ANTHROPIC_API_KEY`
+
+### Azure OpenAI
+
+```yaml
+- step:
+    name: AI Code Review
+    image: ghcr.io/datarootsio/nitpick-senior:latest
+    script:
+      - export INPUT_PROVIDER=bitbucket
+      - export INPUT_MODEL=azure/gpt-4o
+      - export AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+      - python -m src.main
+```
+
+Required variables: `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT`
+
+### OpenRouter
+
+Access 200+ models through OpenRouter's unified API:
+
+```yaml
+- step:
+    name: AI Code Review
+    image: ghcr.io/datarootsio/nitpick-senior:latest
+    script:
+      - export INPUT_PROVIDER=bitbucket
+      - export INPUT_MODEL=openrouter/anthropic/claude-3.5-sonnet
+      - python -m src.main
+```
+
+Required variable: `OPENROUTER_API_KEY`
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
+
 ## Predefined Variables Reference
 
 Bitbucket provides these variables automatically in PR pipelines:

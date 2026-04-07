@@ -144,6 +144,77 @@ ai-code-review:
         ghcr.io/datarootsio/nitpick-senior:latest
 ```
 
+## LLM Provider Examples
+
+### OpenAI
+
+```yaml
+ai-code-review:
+  stage: review
+  image: ghcr.io/datarootsio/nitpick-senior:latest
+  variables:
+    INPUT_PROVIDER: gitlab
+    INPUT_MODEL: gpt-4o
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - python -m src.main
+```
+
+### Anthropic
+
+```yaml
+ai-code-review:
+  stage: review
+  image: ghcr.io/datarootsio/nitpick-senior:latest
+  variables:
+    INPUT_PROVIDER: gitlab
+    INPUT_MODEL: anthropic/claude-sonnet-4-5-20250929
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - python -m src.main
+```
+
+### Azure OpenAI
+
+```yaml
+ai-code-review:
+  stage: review
+  image: ghcr.io/datarootsio/nitpick-senior:latest
+  variables:
+    INPUT_PROVIDER: gitlab
+    INPUT_MODEL: azure/gpt-4o
+    AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
+    AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - python -m src.main
+```
+
+### OpenRouter
+
+Access 200+ models through OpenRouter's unified API:
+
+```yaml
+ai-code-review:
+  stage: review
+  image: ghcr.io/datarootsio/nitpick-senior:latest
+  variables:
+    INPUT_PROVIDER: gitlab
+    INPUT_MODEL: openrouter/anthropic/claude-3.5-sonnet
+    OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - python -m src.main
+```
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
+
 ## Predefined Variables Reference
 
 GitLab provides these variables automatically in MR pipelines:
