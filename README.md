@@ -34,7 +34,12 @@ An AI-powered code reviewer that works across multiple Git platforms. It analyze
 
 ## Quick Start
 
-1. Create `.github/workflows/nitpick-senior.yml`:
+1. Add a CI pipeline for your platform:
+
+<details>
+<summary><strong>GitHub Actions</strong></summary>
+
+Create `.github/workflows/nitpick-senior.yml`:
 
 ```yaml
 name: Nitpick Senior Review
@@ -61,7 +66,97 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
 ```
 
-2. (Optional) Create `.github/ai-reviewer.md` to customize review behavior:
+</details>
+
+<details>
+<summary><strong>GitLab CI</strong></summary>
+
+Create `.gitlab-ci.yml`:
+
+```yaml
+nitpick-senior:
+  image: python:3.12-slim
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  script:
+    - pip install nitpick-senior
+    - nitpick-senior review
+      --platform gitlab
+      --project-id $CI_PROJECT_ID
+      --mr-id $CI_MERGE_REQUEST_IID
+      --model gpt-4o
+  variables:
+    OPENAI_API_KEY: $OPENAI_API_KEY
+    GITLAB_TOKEN: $GITLAB_TOKEN
+```
+
+</details>
+
+<details>
+<summary><strong>Azure DevOps Pipelines</strong></summary>
+
+Create `azure-pipelines.yml`:
+
+```yaml
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.12'
+
+  - script: |
+      pip install nitpick-senior
+      nitpick-senior review \
+        --platform azure-devops \
+        --organization $(System.CollectionUri) \
+        --project $(System.TeamProject) \
+        --repo $(Build.Repository.Name) \
+        --pr-id $(System.PullRequest.PullRequestId) \
+        --model gpt-4o
+    env:
+      OPENAI_API_KEY: $(OPENAI_API_KEY)
+      AZURE_DEVOPS_TOKEN: $(System.AccessToken)
+```
+
+</details>
+
+<details>
+<summary><strong>Bitbucket Pipelines</strong></summary>
+
+Create `bitbucket-pipelines.yml`:
+
+```yaml
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Nitpick Senior Review
+          image: python:3.12-slim
+          script:
+            - pip install nitpick-senior
+            - nitpick-senior review
+              --platform bitbucket
+              --workspace $BITBUCKET_WORKSPACE
+              --repo $BITBUCKET_REPO_SLUG
+              --pr-id $BITBUCKET_PR_ID
+              --model gpt-4o
+          variables:
+            OPENAI_API_KEY: $OPENAI_API_KEY
+            BITBUCKET_TOKEN: $BITBUCKET_TOKEN
+```
+
+</details>
+
+2. (Optional) Create an agent spec file to customize review behavior:
 
 ```markdown
 # Nitpick Senior Configuration
@@ -130,62 +225,6 @@ Nitpick Senior uses [Pydantic AI](https://ai.pydantic.dev/) for LLM interactions
 | OpenRouter | `openrouter/anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` |
 
 Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
-
-## Provider Examples
-
-### OpenAI
-
-```yaml
-- uses: datarootsio/nitpick-senior@v1
-  with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: gpt-4o
-  env:
-    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-```
-
-### Anthropic
-
-```yaml
-- uses: datarootsio/nitpick-senior@v1
-  with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: anthropic/claude-sonnet-4-5-20250929
-  env:
-    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-```
-
-### Azure OpenAI
-
-```yaml
-- uses: datarootsio/nitpick-senior@v1
-  with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: azure/gpt-4o
-  env:
-    AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
-    AZURE_OPENAI_ENDPOINT: https://your-resource.openai.azure.com
-```
-
-### OpenRouter
-
-Access any model through OpenRouter's unified API:
-
-```yaml
-- uses: datarootsio/nitpick-senior@v1
-  with:
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: openrouter/anthropic/claude-3.5-sonnet
-  env:
-    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
-```
-
-Popular models via OpenRouter:
-- `openrouter/openai/gpt-4o` - OpenAI GPT-4o
-- `openrouter/anthropic/claude-3.5-sonnet` - Anthropic Claude 3.5 Sonnet
-- `openrouter/google/gemini-pro-1.5` - Google Gemini Pro
-- `openrouter/meta-llama/llama-3.1-405b-instruct` - Meta Llama 3.1 405B
-- `openrouter/mistralai/mistral-large` - Mistral Large
 
 ## Local Development
 

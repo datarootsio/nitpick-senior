@@ -107,6 +107,57 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
 
+## LLM Provider Examples
+
+### OpenAI
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    model: gpt-4o
+  env:
+    OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+```
+
+### Anthropic
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    model: anthropic/claude-sonnet-4-5-20250929
+  env:
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+```
+
+### Azure OpenAI
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    model: azure/gpt-4o
+  env:
+    AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+    AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+```
+
+### OpenRouter
+
+Access 200+ models through OpenRouter's unified API:
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    model: openrouter/anthropic/claude-3.5-sonnet
+  env:
+    OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+```
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
+
 ## Using with GitHub Enterprise
 
 For GitHub Enterprise Server, the action works the same way. Ensure your self-hosted runner has network access to your LLM provider.

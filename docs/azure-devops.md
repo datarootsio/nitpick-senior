@@ -132,9 +132,41 @@ stages:
                 ghcr.io/datarootsio/nitpick-senior:latest
 ```
 
-## Using with Azure OpenAI
+## LLM Provider Examples
 
-If you're using Azure OpenAI instead of OpenAI directly:
+### OpenAI
+
+```yaml
+arguments: |
+  --rm
+  -e INPUT_PROVIDER=azure_devops
+  -e AZURE_DEVOPS_TOKEN=$(AZURE_DEVOPS_TOKEN)
+  -e AZURE_DEVOPS_ORG=$(System.CollectionUri)
+  -e AZURE_DEVOPS_PROJECT=$(System.TeamProject)
+  -e AZURE_DEVOPS_REPOSITORY=$(Build.Repository.Name)
+  -e SYSTEM_PULLREQUESTID=$(System.PullRequest.PullRequestId)
+  -e INPUT_MODEL=gpt-4o
+  -e OPENAI_API_KEY=$(OPENAI_API_KEY)
+  ghcr.io/datarootsio/nitpick-senior:latest
+```
+
+### Anthropic
+
+```yaml
+arguments: |
+  --rm
+  -e INPUT_PROVIDER=azure_devops
+  -e AZURE_DEVOPS_TOKEN=$(AZURE_DEVOPS_TOKEN)
+  -e AZURE_DEVOPS_ORG=$(System.CollectionUri)
+  -e AZURE_DEVOPS_PROJECT=$(System.TeamProject)
+  -e AZURE_DEVOPS_REPOSITORY=$(Build.Repository.Name)
+  -e SYSTEM_PULLREQUESTID=$(System.PullRequest.PullRequestId)
+  -e INPUT_MODEL=anthropic/claude-sonnet-4-5-20250929
+  -e ANTHROPIC_API_KEY=$(ANTHROPIC_API_KEY)
+  ghcr.io/datarootsio/nitpick-senior:latest
+```
+
+### Azure OpenAI
 
 ```yaml
 arguments: |
@@ -146,11 +178,30 @@ arguments: |
   -e AZURE_DEVOPS_REPOSITORY=$(Build.Repository.Name)
   -e SYSTEM_PULLREQUESTID=$(System.PullRequest.PullRequestId)
   -e INPUT_MODEL=azure/gpt-4o
-  -e AZURE_API_KEY=$(AZURE_OPENAI_API_KEY)
-  -e AZURE_API_BASE=https://your-resource.openai.azure.com
-  -e AZURE_API_VERSION=2024-02-15-preview
+  -e AZURE_OPENAI_API_KEY=$(AZURE_OPENAI_API_KEY)
+  -e AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
   ghcr.io/datarootsio/nitpick-senior:latest
 ```
+
+### OpenRouter
+
+Access 200+ models through OpenRouter's unified API:
+
+```yaml
+arguments: |
+  --rm
+  -e INPUT_PROVIDER=azure_devops
+  -e AZURE_DEVOPS_TOKEN=$(AZURE_DEVOPS_TOKEN)
+  -e AZURE_DEVOPS_ORG=$(System.CollectionUri)
+  -e AZURE_DEVOPS_PROJECT=$(System.TeamProject)
+  -e AZURE_DEVOPS_REPOSITORY=$(Build.Repository.Name)
+  -e SYSTEM_PULLREQUESTID=$(System.PullRequest.PullRequestId)
+  -e INPUT_MODEL=openrouter/anthropic/claude-3.5-sonnet
+  -e OPENROUTER_API_KEY=$(OPENROUTER_API_KEY)
+  ghcr.io/datarootsio/nitpick-senior:latest
+```
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
 
 ## Azure DevOps Server (On-Premises)
 
