@@ -109,11 +109,18 @@ class AzureDevOpsProvider(BaseProvider):
 
         diff_parts = []
         for change in changes.change_entries or []:
-            if not (change.item and change.item.path):
+            # Azure DevOps Python SDK bug: item/changeType are in additional_properties
+            # See: https://github.com/microsoft/azure-devops-python-api/issues/166
+            item = getattr(change, "additional_properties", {}).get("item", {})
+            path = item.get("path", "")
+            if not path:
                 continue
 
-            path = change.item.path.lstrip("/")
-            change_type = str(change.change_type).lower() if change.change_type else ""
+            path = path.lstrip("/")
+            change_type_raw = getattr(change, "additional_properties", {}).get(
+                "changeType", ""
+            )
+            change_type = str(change_type_raw).lower() if change_type_raw else ""
 
             # Fetch file content at base and head commits
             if "delete" in change_type:
@@ -162,8 +169,11 @@ class AzureDevOpsProvider(BaseProvider):
 
         files = []
         for change in changes.change_entries or []:
-            if change.item and change.item.path:
-                files.append(change.item.path.lstrip("/"))
+            # Azure DevOps Python SDK bug: item is in additional_properties
+            item = getattr(change, "additional_properties", {}).get("item", {})
+            path = item.get("path", "")
+            if path:
+                files.append(path.lstrip("/"))
 
         return files
 

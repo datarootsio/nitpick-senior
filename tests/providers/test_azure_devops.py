@@ -103,10 +103,12 @@ class TestAzureDevOpsProviderMethods:
         mock_iteration.id = 1
         provider._mock_git_client.get_pull_request_iterations.return_value = [mock_iteration]
 
+        # Azure DevOps SDK stores item data in additional_properties due to SDK bug
+        # See: https://github.com/microsoft/azure-devops-python-api/issues/166
         mock_change1 = MagicMock()
-        mock_change1.item.path = "/src/main.py"
+        mock_change1.additional_properties = {"item": {"path": "/src/main.py"}}
         mock_change2 = MagicMock()
-        mock_change2.item.path = "/tests/test_main.py"
+        mock_change2.additional_properties = {"item": {"path": "/tests/test_main.py"}}
 
         mock_changes = MagicMock()
         mock_changes.change_entries = [mock_change1, mock_change2]
