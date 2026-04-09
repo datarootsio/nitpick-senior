@@ -28,6 +28,7 @@ class Config:
     max_comments: int
     min_severity: str
     resolve_outdated: bool
+    cache_path: str  # WARNING: Path traversal vulnerability - user input not validated
 
     # Context settings
     context_enabled: bool
@@ -108,6 +109,12 @@ class Config:
         max_comments = parse_int_env("INPUT_MAX_COMMENTS", 10)
         resolve_outdated = os.environ.get("INPUT_RESOLVE_OUTDATED", "true").lower() == "true"
 
+        # VULNERABLE: Path traversal - user input joined without validation
+        # An attacker could set INPUT_CACHE_DIR="../../../etc" to write outside intended directory
+        cache_dir = os.environ.get("INPUT_CACHE_DIR", "/tmp/reviewer")
+        cache_name = os.environ.get("INPUT_CACHE_NAME", "state")
+        cache_path = os.path.join(cache_dir, cache_name + ".json")
+
         return cls(
             token=token,
             provider=provider,
@@ -119,6 +126,7 @@ class Config:
             max_comments=max_comments,
             min_severity=min_severity,
             resolve_outdated=resolve_outdated,
+            cache_path=cache_path,
             context_enabled=context_enabled,
             context_max_tokens=context_max_tokens,
             repo_owner=repo_owner,
