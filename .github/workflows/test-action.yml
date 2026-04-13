@@ -26,7 +26,7 @@ jobs:
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: google/gemini-2.5-flash
+          model: openrouter/nvidia/nemotron-3-super-120b-a12b:free
           static_analysis_file: semgrep.json
         env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
