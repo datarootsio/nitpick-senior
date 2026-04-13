@@ -15,4 +15,4 @@ RUN uv sync --frozen --no-dev
 COPY src/ ./src/
 
 # Use absolute path to venv python so it works regardless of GitHub Actions working directory
-ENTRYPOINT ["uv", "run", "src/main.py"]
+ENTRYPOINT ["uv", "run", "--directory", "/app", "src/main.py"]
