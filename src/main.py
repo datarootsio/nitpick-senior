@@ -173,5 +173,10 @@ async def main() -> int:
         return 1
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """CLI entry point for the package."""
     sys.exit(asyncio.run(main()))
+
+
+if __name__ == "__main__":
+    cli()

@@ -1,5 +1,5 @@
 [project]
-name = "ai-pr-reviewer"
+name = "nitpick-senior"
 version = "1.0.0"
 description = "AI-powered code review for pull requests"
 requires-python = ">=3.12"
@@ -14,6 +14,9 @@ dependencies = [
     "python-gitlab>=4.0.0",
     "atlassian-python-api>=3.41.0",
 ]
+
+[project.scripts]
+nitpick-senior = "src.main:cli"
 
 [project.optional-dependencies]
 dev = [
