@@ -94,12 +94,12 @@ def _extract_go_imports(content: str) -> list[str]:
     return imports
 
 
-def _resolve_python_import(import_name: str, source_dir: str) -> str | None:
-    """Resolve Python import to file path."""
+def _resolve_python_import(import_name: str, source_dir: str) -> list[str]:
+    """Resolve Python import to possible file paths."""
     # Skip standard library and third-party packages
     if not import_name.startswith(".") and "." not in import_name:
         # Likely stdlib or third-party
-        return None
+        return []
 
     # Convert relative imports
     if import_name.startswith("."):
@@ -118,14 +118,11 @@ def _resolve_python_import(import_name: str, source_dir: str) -> str | None:
     # Convert module.name to module/name
     module_path = module.replace(".", "/")
 
-    # Try different file patterns
-    candidates = [
+    # Return both candidates - the fetcher tries each and skips 404s
+    return [
         f"{os.path.join(path_prefix, module_path)}.py",
         f"{os.path.join(path_prefix, module_path)}/__init__.py",
     ]
-
-    # Return first candidate (actual existence check happens during fetch)
-    return candidates[0] if candidates else None
 
 
 def _resolve_js_import(import_name: str, source_dir: str) -> list[str]:
@@ -166,8 +163,7 @@ def resolve_import_paths(import_name: str, source_file: str, language: str) -> l
     source_dir = os.path.dirname(source_file)
 
     if language == "python":
-        path = _resolve_python_import(import_name, source_dir)
-        return [path] if path else []
+        return _resolve_python_import(import_name, source_dir)
     elif language in ("javascript", "typescript"):
         return _resolve_js_import(import_name, source_dir)
 

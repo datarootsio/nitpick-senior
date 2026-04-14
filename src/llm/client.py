@@ -67,6 +67,7 @@ def create_model(model_string: str):
             - "anthropic/claude-..." (Anthropic)
             - "google/gemini-..." (Google AI Studio)
             - "azure/gpt-4o" (Azure OpenAI)
+            - "foundry/claude-sonnet-4-6" (Azure Foundry)
             - "openrouter/provider/model" (OpenRouter)
 
     Returns:
@@ -82,6 +83,16 @@ def create_model(model_string: str):
             api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
         )
         return OpenAIModel(model_string.replace("azure/", ""), provider=provider)
+    elif model_string.startswith("foundry/"):
+        from anthropic import AsyncAnthropicFoundry
+        from pydantic_ai.providers.anthropic import AnthropicProvider
+
+        foundry_client = AsyncAnthropicFoundry(
+            api_key=os.environ.get("ANTHROPIC_FOUNDRY_API_KEY"),
+            resource=os.environ.get("ANTHROPIC_FOUNDRY_RESOURCE"),
+        )
+        provider = AnthropicProvider(anthropic_client=foundry_client)
+        return AnthropicModel(model_string.replace("foundry/", ""), provider=provider)
     elif model_string.startswith("openrouter/"):
         provider = OpenAIProvider(
             base_url="https://openrouter.ai/api/v1",
