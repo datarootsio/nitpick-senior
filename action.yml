@@ -18,8 +18,12 @@ inputs:
     required: false
     default: ''
 
+  llm_provider:
+    description: 'LLM provider (openai, anthropic, google, azure, azure_foundry_anthropic, azure_foundry_openai, openrouter)'
+    required: true
+
   model:
-    description: 'Model string (e.g., gpt-4o, anthropic/claude-sonnet-4-5-20250929, azure/gpt-4o, openrouter/anthropic/claude-3.5-sonnet)'
+    description: 'Model name (e.g., gpt-4o, claude-sonnet-4-6, gemini-2.5-flash)'
     required: true
 
   agent_spec_path:
@@ -74,6 +78,7 @@ runs:
     INPUT_PROVIDER: ${{ inputs.provider }}
     INPUT_TOKEN: ${{ inputs.token }}
     INPUT_GITHUB_TOKEN: ${{ inputs.github_token }}
+    INPUT_LLM_PROVIDER: ${{ inputs.llm_provider }}
     INPUT_MODEL: ${{ inputs.model }}
     INPUT_AGENT_SPEC_PATH: ${{ inputs.agent_spec_path }}
     INPUT_POST_SUMMARY: ${{ inputs.post_summary }}

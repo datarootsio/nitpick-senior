@@ -58,63 +58,77 @@ class UsageStats:
     model: str = ""
 
 
-def create_model(model_string: str):
-    """Create a Pydantic AI model from a model string.
+def create_model(llm_provider: str, model_name: str):
+    """Create a Pydantic AI model from a provider and model name.
 
     Args:
-        model_string: Model identifier. Supported formats:
-            - "gpt-4o" (OpenAI)
-            - "anthropic/claude-..." (Anthropic)
-            - "google/gemini-..." (Google AI Studio)
-            - "azure/gpt-4o" (Azure OpenAI)
-            - "foundry/claude-sonnet-4-6" (Azure Foundry)
-            - "openrouter/provider/model" (OpenRouter)
+        llm_provider: LLM provider (openai, anthropic, google, azure, azure_foundry_anthropic,
+            azure_foundry_openai, openrouter)
+        model_name: Model name (e.g., gpt-4o, claude-sonnet-4-6, gemini-2.5-flash)
 
     Returns:
         Configured Pydantic AI model
     """
-    if model_string.startswith("anthropic/"):
-        return AnthropicModel(model_string.replace("anthropic/", ""))
-    elif model_string.startswith("google/"):
-        return GoogleModel(model_string.replace("google/", ""))
-    elif model_string.startswith("azure/"):
+    if llm_provider == "anthropic":
+        return AnthropicModel(model_name)
+    elif llm_provider == "google":
+        return GoogleModel(model_name)
+    elif llm_provider == "azure":
         provider = OpenAIProvider(
             base_url=os.environ.get("AZURE_OPENAI_ENDPOINT"),
             api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
         )
-        return OpenAIModel(model_string.replace("azure/", ""), provider=provider)
-    elif model_string.startswith("foundry/"):
+        return OpenAIModel(model_name, provider=provider)
+    elif llm_provider == "azure_foundry_anthropic":
         from anthropic import AsyncAnthropicFoundry
         from pydantic_ai.providers.anthropic import AnthropicProvider
 
         foundry_client = AsyncAnthropicFoundry(
-            api_key=os.environ.get("ANTHROPIC_FOUNDRY_API_KEY"),
-            resource=os.environ.get("ANTHROPIC_FOUNDRY_RESOURCE"),
+            api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
+            base_url=os.environ.get("AZURE_FOUNDRY_BASE_URL"),
+            resource=os.environ.get("AZURE_FOUNDRY_RESOURCE"),
         )
         provider = AnthropicProvider(anthropic_client=foundry_client)
-        return AnthropicModel(model_string.replace("foundry/", ""), provider=provider)
-    elif model_string.startswith("openrouter/"):
+        return AnthropicModel(model_name, provider=provider)
+    elif llm_provider == "azure_foundry_openai":
+        resource = os.environ.get("AZURE_FOUNDRY_RESOURCE")
+        base_url = os.environ.get("AZURE_FOUNDRY_BASE_URL")
+        if not base_url and resource:
+            base_url = f"https://{resource}.services.ai.azure.com/openai/v1"
+        provider = OpenAIProvider(
+            base_url=base_url,
+            api_key=os.environ.get("AZURE_FOUNDRY_API_KEY"),
+        )
+        return OpenAIModel(model_name, provider=provider)
+    elif llm_provider == "openrouter":
         provider = OpenAIProvider(
             base_url="https://openrouter.ai/api/v1",
             api_key=os.environ.get("OPENROUTER_API_KEY"),
         )
-        return OpenAIModel(model_string.replace("openrouter/", ""), provider=provider)
+        return OpenAIModel(model_name, provider=provider)
+    elif llm_provider == "openai":
+        return OpenAIModel(model_name)
     else:
-        return OpenAIModel(model_string)
+        raise ValueError(
+            f"Unknown LLM provider: '{llm_provider}'. "
+            "Supported: openai, anthropic, google, azure, azure_foundry_anthropic, "
+            "azure_foundry_openai, openrouter"
+        )
 
 
 class LLMClient:
     """Client for interacting with LLMs via Pydantic AI."""
 
-    def __init__(self, model: str, max_comments: int = 10):
+    def __init__(self, llm_provider: str, model: str, max_comments: int = 10):
         """Initialize the LLM client.
 
         Args:
-            model: Model string (e.g., "gpt-4o", "anthropic/claude-sonnet-4-5-20250929")
+            llm_provider: LLM provider (openai, anthropic, google, azure, foundry, openrouter)
+            model: Model name (e.g., "gpt-4o", "claude-sonnet-4-6")
             max_comments: Maximum number of review comments to generate
         """
         self.model_string = model
-        self.model = create_model(model)
+        self.model = create_model(llm_provider, model)
         self.usage = UsageStats(model=model)
         self.max_comments = max_comments
 

@@ -6,16 +6,7 @@ Nitpick Senior works natively with GitHub Actions. This is the default provider 
 
 - A GitHub repository with Actions enabled
 - A GitHub token with PR read/write permissions
-- An LLM API key (OpenAI, Anthropic, Azure OpenAI, or AWS Bedrock)
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `GITHUB_TOKEN` | Yes | GitHub token for PR access (automatically provided in Actions) |
-| `INPUT_MODEL` | Yes | LiteLLM model string (e.g., `gpt-4o`, `anthropic/claude-sonnet-4-5-20250929`) |
-| `OPENAI_API_KEY` | Conditional | Required for OpenAI models |
-| `ANTHROPIC_API_KEY` | Conditional | Required for Anthropic models |
+- An LLM API key (OpenAI, Anthropic, Azure OpenAI, Azure Foundry, or OpenRouter)
 
 ## Configuration
 
@@ -42,6 +33,7 @@ jobs:
         uses: datarootsio/nitpick-senior@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          llm_provider: openai
           model: gpt-4o
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -50,9 +42,7 @@ jobs:
 ### Step 2: Add Secrets
 
 1. Go to your repository **Settings** > **Secrets and variables** > **Actions**
-2. Add your LLM API key:
-   - For OpenAI: Add `OPENAI_API_KEY`
-   - For Anthropic: Add `ANTHROPIC_API_KEY`
+2. Add your LLM API key (depends on your chosen provider)
 
 ### Step 3 (Optional): Customize Review Behavior
 
@@ -87,20 +77,14 @@ jobs:
       - name: AI Code Review
         uses: datarootsio/nitpick-senior@v1
         with:
-          # Authentication
           github_token: ${{ secrets.GITHUB_TOKEN }}
-
-          # Model configuration
-          model: anthropic/claude-sonnet-4-5-20250929
-
-          # Review behavior
+          llm_provider: anthropic
+          model: claude-sonnet-4-6
           agent_spec_path: .github/ai-reviewer.md
           post_summary: true
           post_inline_comments: true
           max_comments: 15
           min_severity: warning
-
-          # Context settings
           context_enabled: true
           context_max_tokens: 5000
         env:
@@ -115,6 +99,7 @@ jobs:
 - uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
+    llm_provider: openai
     model: gpt-4o
   env:
     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -126,7 +111,8 @@ jobs:
 - uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: anthropic/claude-sonnet-4-5-20250929
+    llm_provider: anthropic
+    model: claude-sonnet-4-6
   env:
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 ```
@@ -137,10 +123,37 @@ jobs:
 - uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: azure/gpt-4o
+    llm_provider: azure
+    model: gpt-4o
   env:
     AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
     AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
+```
+
+### Azure Foundry — Claude
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    llm_provider: azure_foundry_anthropic
+    model: claude-sonnet-4-6
+  env:
+    AZURE_FOUNDRY_API_KEY: ${{ secrets.AZURE_FOUNDRY_API_KEY }}
+    AZURE_FOUNDRY_RESOURCE: ${{ secrets.AZURE_FOUNDRY_RESOURCE }}
+```
+
+### Azure Foundry — OpenAI / Other Models
+
+```yaml
+- uses: datarootsio/nitpick-senior@v1
+  with:
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    llm_provider: azure_foundry_openai
+    model: gpt-4o
+  env:
+    AZURE_FOUNDRY_API_KEY: ${{ secrets.AZURE_FOUNDRY_API_KEY }}
+    AZURE_FOUNDRY_RESOURCE: ${{ secrets.AZURE_FOUNDRY_RESOURCE }}
 ```
 
 ### OpenRouter
@@ -151,7 +164,8 @@ Access 200+ models through OpenRouter's unified API:
 - uses: datarootsio/nitpick-senior@v1
   with:
     github_token: ${{ secrets.GITHUB_TOKEN }}
-    model: openrouter/anthropic/claude-3.5-sonnet
+    llm_provider: openrouter
+    model: nvidia/nemotron-3-super-120b-a12b:free
   env:
     OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 ```
@@ -167,7 +181,8 @@ For GitHub Enterprise Server, the action works the same way. Ensure your self-ho
 | Input | Default | Description |
 |-------|---------|-------------|
 | `github_token` | - | GitHub token for PR access |
-| `model` | - | LiteLLM model string |
+| `llm_provider` | - | LLM provider (`openai`, `anthropic`, `google`, `azure`, `azure_foundry_anthropic`, `azure_foundry_openai`, `openrouter`) |
+| `model` | - | Model name (e.g., `gpt-4o`, `claude-sonnet-4-6`) |
 | `agent_spec_path` | `.github/ai-reviewer.md` | Path to agent spec file |
 | `post_summary` | `true` | Post PR summary comment |
 | `post_inline_comments` | `true` | Post inline code comments |
