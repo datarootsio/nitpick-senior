@@ -26,7 +26,8 @@ jobs:
         uses: ./
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          model: openrouter/nvidia/nemotron-3-super-120b-a12b:free
+          llm_provider: openrouter
+          model: nvidia/nemotron-3-super-120b-a12b:free
           static_analysis_file: semgrep.json
         env:
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}

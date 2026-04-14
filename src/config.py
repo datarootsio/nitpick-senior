@@ -19,6 +19,7 @@ class Config:
     provider: ProviderType
 
     # Model settings
+    llm_provider: str
     model: str
     agent_spec_path: str
 
@@ -76,6 +77,10 @@ class Config:
                 "Set INPUT_TOKEN, INPUT_GITHUB_TOKEN, or provider-specific token env var."
             )
 
+        llm_provider = os.environ.get("INPUT_LLM_PROVIDER", "").lower()
+        if not llm_provider:
+            raise ValueError("LLM provider is required. Set INPUT_LLM_PROVIDER.")
+
         model = os.environ.get("INPUT_MODEL", "")
         if not model:
             raise ValueError("Model is required. Set INPUT_MODEL.")
@@ -111,6 +116,7 @@ class Config:
         return cls(
             token=token,
             provider=provider,
+            llm_provider=llm_provider,
             model=model,
             agent_spec_path=os.environ.get("INPUT_AGENT_SPEC_PATH", ".github/ai-reviewer.md"),
             post_summary=os.environ.get("INPUT_POST_SUMMARY", "true").lower() == "true",

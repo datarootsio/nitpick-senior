@@ -61,6 +61,7 @@ jobs:
       - uses: datarootsio/nitpick-senior@v1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          llm_provider: openai
           model: gpt-4o
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -196,7 +197,8 @@ See the [Provider Overview](docs/PROVIDERS.md) for feature comparison across pla
 | Input | Required | Default | Description |
 |-------|----------|---------|-------------|
 | `github_token` | Yes | - | GitHub token for API access |
-| `model` | Yes | - | Model string (see [LLM Providers](#llm-providers)) |
+| `llm_provider` | Yes | - | LLM provider (see [LLM Providers](#llm-providers)) |
+| `model` | Yes | - | Model name (e.g., `gpt-4o`, `claude-sonnet-4-6`) |
 | `agent_spec_path` | No | `.github/ai-reviewer.md` | Path to agent spec file |
 | `post_summary` | No | `true` | Post PR summary comment |
 | `post_inline_comments` | No | `true` | Post inline review comments |
@@ -208,23 +210,17 @@ See the [Provider Overview](docs/PROVIDERS.md) for feature comparison across pla
 
 Nitpick Senior uses [Pydantic AI](https://ai.pydantic.dev/) for LLM interactions, providing structured outputs with automatic validation.
 
-### Direct Providers
+| Provider (`llm_provider`) | Example `model` | Required Environment Variables |
+|---------------------------|-----------------|-------------------------------|
+| `openai` | `gpt-4o` | `OPENAI_API_KEY` |
+| `anthropic` | `claude-sonnet-4-6` | `ANTHROPIC_API_KEY` |
+| `google` | `gemini-2.5-flash` | `GOOGLE_API_KEY` |
+| `azure` | `gpt-4o` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+| `azure_foundry_anthropic` | `claude-sonnet-4-6` | `AZURE_FOUNDRY_API_KEY`, `AZURE_FOUNDRY_RESOURCE` |
+| `azure_foundry_openai` | `gpt-4o` | `AZURE_FOUNDRY_API_KEY`, `AZURE_FOUNDRY_RESOURCE` |
+| `openrouter` | `nvidia/nemotron-3-super-120b-a12b:free` | `OPENROUTER_API_KEY` |
 
-| Provider | Model Format | Required Environment Variables |
-|----------|-------------|-------------------------------|
-| OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
-| Anthropic | `anthropic/claude-sonnet-4-5-20250929` | `ANTHROPIC_API_KEY` |
-| Azure OpenAI | `azure/gpt-4o` | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
-
-### OpenRouter (200+ Models)
-
-[OpenRouter](https://openrouter.ai) provides access to models from OpenAI, Anthropic, Google, Meta, Mistral, and many more through a single API.
-
-| Provider | Model Format | Required Environment Variables |
-|----------|-------------|-------------------------------|
-| OpenRouter | `openrouter/anthropic/claude-3.5-sonnet` | `OPENROUTER_API_KEY` |
-
-Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
+Browse OpenRouter models at [openrouter.ai/models](https://openrouter.ai/models).
 
 ## Local Development
 
