@@ -608,7 +608,7 @@ wheels = [
 [[package]]
 name = "nitpick-senior"
 version = "1.0.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "atlassian-python-api" },
     { name = "azure-devops" },

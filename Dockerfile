@@ -9,11 +9,8 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY src/ ./src/
 
-# Install dependencies and the package itself (creates CLI entry point)
-RUN uv sync --frozen --no-dev && uv pip install --no-deps -e .
+# Install dependencies then the package itself (non-editable: copies to site-packages)
+RUN uv sync --frozen --no-dev && uv pip install --no-deps .
 
-# Ensure src is importable from any working directory
-ENV PYTHONPATH=/app
-
-# Run the CLI - works from any directory
+# Run the CLI - works from any working directory
 ENTRYPOINT ["/app/.venv/bin/nitpick-senior"]
