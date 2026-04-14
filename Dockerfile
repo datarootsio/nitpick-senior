@@ -5,17 +5,12 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 
 WORKDIR /app
 
-# Copy dependency files
+# Copy project files
 COPY pyproject.toml uv.lock ./
-
-# Install dependencies with uv (faster than pip)
-RUN uv sync --frozen --no-dev
-
-# Copy source code
 COPY src/ ./src/
 
-# Set PYTHONPATH so imports work regardless of working directory
-ENV PYTHONPATH=/app
+# Install dependencies then the package itself (non-editable: copies to site-packages)
+RUN uv sync --frozen --no-dev && uv pip install --no-deps .
 
-# Use --directory to ensure uv runs from /app
-ENTRYPOINT ["uv", "run", "--directory", "/app", "python", "-m", "src.main"]
+# Run the CLI - works from any working directory
+ENTRYPOINT ["/app/.venv/bin/nitpick-senior"]
